@@ -1,0 +1,1571 @@
+import socket
+import os
+import math
+import pandas as pd
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from django.shortcuts import render
+from django.http import HttpResponse, JsonResponse
+from django.views.decorators.http import require_GET
+from django.conf import settings
+
+from .models import Inventario, EscaneoRed
+from django.db.models import Max
+
+
+import json
+import re
+
+from django.views.decorators.csrf import csrf_exempt
+
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import cm
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Table,
+    TableStyle,
+    PageBreak,
+    Image,
+)
+
+# -----------------------------
+# VISTAS BÁSICAS
+# -----------------------------
+
+def menu_principal(request):
+    return render(request, 'dispositivos/menu_principal.html')
+
+
+
+# -----------------------------
+# INFORME TÉCNICO
+# -----------------------------
+
+def crear_informe_tecnico(request):
+    return render(
+        request,
+        'dispositivos/informe_tecnico.html'
+    )
+
+
+def obtener_ruta_inventario():
+    """
+    Obtiene la ruta del archivo Excel del inventario.
+    """
+    return os.path.join(
+        settings.BASE_DIR.parent,
+        'datos',
+        'inventario.xlsx'
+    )
+
+
+def limpiar_valor(valor):
+    """
+    Convierte valores vacíos o NaN de Excel en texto vacío.
+    """
+    if valor is None:
+        return ''
+
+    if isinstance(valor, float) and math.isnan(valor):
+        return ''
+
+    if pd.isna(valor):
+        return ''
+
+    return str(valor).strip()
+
+
+@require_GET
+def buscar_activo(request, codigo_activo):
+
+    try:
+
+        codigo_busqueda = str(codigo_activo).strip()
+
+        ruta_excel = obtener_ruta_inventario()
+
+        if not os.path.exists(ruta_excel):
+            return JsonResponse(
+                {
+                    'encontrado': False,
+                    'mensaje': (
+                        f'No se encontró el archivo de inventario: '
+                        f'{ruta_excel}'
+                    )
+                },
+                status=500
+            )
+
+        # Leer el inventario desde Excel
+        df = pd.read_excel(
+            ruta_excel,
+            dtype=str
+        )
+
+        # Limpiar nombres de columnas
+        df.columns = df.columns.astype(str).str.strip()
+
+        # Limpiar códigos de activo
+        df['CODIGO ACTUAL'] = (
+            df['CODIGO ACTUAL']
+            .fillna('')
+            .astype(str)
+            .str.strip()
+        )
+
+        # Buscar coincidencia exacta
+        resultado = df[
+            df['CODIGO ACTUAL'] == codigo_busqueda
+        ]
+
+        if resultado.empty:
+            return JsonResponse(
+                {
+                    'encontrado': False,
+                    'mensaje': (
+                        f'No se encontró ningún activo con el código '
+                        f'{codigo_busqueda}.'
+                    )
+                },
+                status=404
+            )
+
+        # Obtener el primer resultado
+        activo = resultado.iloc[0]
+
+        return JsonResponse(
+            {
+                'encontrado': True,
+
+                'codigo_actual':
+                    limpiar_valor(activo.get('CODIGO ACTUAL')),
+
+                'descripcion':
+                    limpiar_valor(activo.get('DESCRIPCION')),
+
+                'marca':
+                    limpiar_valor(activo.get('MARCA')),
+
+                'modelo':
+                    limpiar_valor(activo.get('MODELO')),
+
+                'serie':
+                    limpiar_valor(activo.get('SERIE')),
+
+                'procesador':
+                    limpiar_valor(activo.get('PROCESADOR')),
+
+                'memoria':
+                    limpiar_valor(activo.get('MEMORIA')),
+
+                'disco':
+                    limpiar_valor(activo.get('DISCO')),
+
+                'sistema_operativo':
+                    limpiar_valor(activo.get('SISTEMA OPERATIVO')),
+
+                'estado':
+                    limpiar_valor(activo.get('ESTADO')),
+
+                'anterior_custodio':
+                    limpiar_valor(
+                        activo.get(
+                            'NOMBRE DE USUARIO FINAL '
+                            '(APELLIDOS Y NOMBRES COMPLETOS)'
+                        )
+                    ),
+
+                'anterior_ubicacion':
+                    limpiar_valor(
+                        activo.get(
+                            'UBICACION FISICA EDIFICIO - PISO'
+                        )
+                    ),
+            }
+        )
+
+    except Exception as e:
+
+        print(
+            f'Error al buscar activo {codigo_activo}: {e}'
+        )
+
+        return JsonResponse(
+            {
+                'encontrado': False,
+                'mensaje': str(e)
+            },
+            status=500
+        )
+
+
+def texto_pdf(valor):
+    """
+    Convierte valores vacíos en un espacio visible para el PDF.
+    """
+    if valor is None:
+        return ''
+
+    return str(valor).strip()
+
+
+def escapar_pdf(valor):
+    """
+    Evita problemas con caracteres especiales dentro de Paragraph.
+    """
+    valor = texto_pdf(valor)
+
+    return (
+        valor
+        .replace('&', '&amp;')
+        .replace('<', '&lt;')
+        .replace('>', '&gt;')
+    )
+
+
+def nombre_archivo_seguro(nombre):
+    """
+    Genera un nombre de archivo seguro.
+    """
+    nombre = texto_pdf(nombre)
+
+    if not nombre:
+        return 'informe_tecnico'
+
+    nombre = re.sub(
+        r'[^A-Za-z0-9_-]+',
+        '_',
+        nombre
+    )
+
+    return nombre
+
+
+def dibujar_pie_pagina(canvas, doc):
+    """
+    Pie de página del informe.
+    """
+    canvas.saveState()
+
+    canvas.setFont('Helvetica', 8)
+
+    canvas.drawCentredString(
+        A4[0] / 2,
+        1.2 * cm,
+        f'Página {doc.page}'
+    )
+
+    canvas.restoreState()
+
+
+ruta_logo = os.path.join(
+    settings.BASE_DIR,
+    'staticfiles',
+    'logo-contraloria.png'
+)
+
+
+@csrf_exempt
+def generar_informe_pdf(request):
+    
+
+    if request.method != 'POST':
+        return JsonResponse(
+            {
+                'error': 'Método no permitido.'
+            },
+            status=405
+        )
+
+    try:
+
+        datos = json.loads(request.body.decode('utf-8'))
+
+        numero_informe = texto_pdf(
+            datos.get('numero_informe')
+        )
+
+        fecha = texto_pdf(
+            datos.get('fecha')
+        )
+
+        ciudad = texto_pdf(
+            datos.get('ciudad', 'Guayaquil')
+        )
+
+        anterior_custodio = texto_pdf(
+            datos.get('anterior_custodio')
+        )
+
+        anterior_ubicacion = texto_pdf(
+            datos.get('anterior_ubicacion')
+        )
+
+        nuevo_custodio = texto_pdf(
+            datos.get('nuevo_custodio')
+        )
+
+        nueva_ubicacion = texto_pdf(
+            datos.get('nueva_ubicacion')
+        )
+
+        observaciones = texto_pdf(
+            datos.get('observaciones')
+        )
+
+        elaborado_por = texto_pdf(
+            datos.get('elaborado_por')
+        )
+
+        cargo_elaborado = texto_pdf(
+            datos.get('cargo_elaborado')
+        )
+
+        supervisado_por = texto_pdf(
+            datos.get('supervisado_por')
+        )
+
+        cargo_supervisado = texto_pdf(
+            datos.get('cargo_supervisado')
+        )
+
+        equipos = datos.get('equipos', [])
+
+
+        # Crear respuesta PDF
+        respuesta = HttpResponse(
+            content_type='application/pdf'
+        )
+
+        nombre_archivo = nombre_archivo_seguro(
+            numero_informe
+        )
+
+        respuesta[
+            'Content-Disposition'
+        ] = (
+            f'attachment; '
+            f'filename="{nombre_archivo}.pdf"'
+        )
+
+
+        documento = SimpleDocTemplate(
+            respuesta,
+            pagesize=A4,
+            rightMargin=1.5 * cm,
+            leftMargin=1.5 * cm,
+            topMargin=1.5 * cm,
+            bottomMargin=2 * cm,
+        )
+
+
+        estilos = getSampleStyleSheet()
+
+
+        estilo_titulo = ParagraphStyle(
+            'TituloInforme',
+            parent=estilos['Heading1'],
+            alignment=TA_CENTER,
+            fontName='Helvetica-Bold',
+            fontSize=15,
+            leading=18,
+            spaceAfter=8,
+        )
+
+
+        estilo_subtitulo = ParagraphStyle(
+            'SubtituloInforme',
+            parent=estilos['Normal'],
+            alignment=TA_CENTER,
+            fontName='Helvetica',
+            fontSize=10,
+            leading=13,
+            spaceAfter=15,
+        )
+
+
+        estilo_seccion = ParagraphStyle(
+            'SeccionInforme',
+            parent=estilos['Heading2'],
+            fontName='Helvetica-Bold',
+            fontSize=10,
+            textColor=colors.white,
+            backColor=colors.HexColor('#2c3e50'),
+            borderPadding=6,
+            spaceBefore=10,
+            spaceAfter=8,
+        )
+
+
+        estilo_normal = ParagraphStyle(
+            'NormalInforme',
+            parent=estilos['Normal'],
+            fontName='Helvetica',
+            fontSize=8.5,
+            leading=11,
+        )
+
+
+        estilo_celda = ParagraphStyle(
+            'CeldaInforme',
+            parent=estilo_normal,
+            fontSize=7.5,
+            leading=9,
+        )
+
+
+        estilo_celda_negrita = ParagraphStyle(
+            'CeldaNegrita',
+            parent=estilo_celda,
+            fontName='Helvetica-Bold',
+        )
+
+
+        elementos = []
+
+        # =========================================
+        # ENCABEZADO CON LOGO
+        # =========================================
+
+        estilo_titulo_header = ParagraphStyle(
+            'TituloHeader',
+            parent=estilos['Normal'],
+            alignment=TA_CENTER,
+            fontName='Helvetica-Bold',
+            fontSize=15,
+            leading=18,
+            spaceAfter=6,
+        )
+
+        estilo_numero_header = ParagraphStyle(
+            'NumeroHeader',
+            parent=estilos['Normal'],
+            alignment=TA_CENTER,
+            fontName='Helvetica',
+            fontSize=10,
+            leading=13,
+        )
+
+
+        # Logo
+        logo = Image(
+            ruta_logo,
+            width=3.0 * cm,
+            height=3.0 * cm
+        )
+
+        # Texto del encabezado
+        texto_header = [
+            Paragraph(
+                'CONTRALORÍA GENERAL DEL ESTADO<br/>'
+                'Dirección Provincial de Guayas<br/>'
+                'Unidad Administrativa<br/>',
+                estilo_titulo_header
+            ),
+
+            Paragraph(
+                (
+                    '<b>INFORME TÉCNICO DE BIENES TECNOLÓGICOS N°:</b> '
+                    f'{escapar_pdf(numero_informe)}'
+                ),
+                estilo_numero_header
+            ),
+        ]
+
+
+        # Tabla invisible para mantener logo y texto
+        tabla_header = Table(
+            [
+                [
+                    logo,
+                    texto_header
+                ]
+            ],
+            colWidths=[
+                4.0 * cm,
+                13.4 * cm,
+            ],
+            rowHeights=[
+                3.2 * cm
+            ]
+        )
+
+
+        tabla_header.setStyle(
+            TableStyle([
+                # Sin bordes
+                (
+                    'BOX',
+                    (0, 0),
+                    (-1, -1),
+                    0,
+                    colors.white
+                ),
+
+                (
+                    'INNERGRID',
+                    (0, 0),
+                    (-1, -1),
+                    0,
+                    colors.white
+                ),
+
+                # Alineación vertical
+                (
+                    'VALIGN',
+                    (0, 0),
+                    (-1, -1),
+                    'MIDDLE'
+                ),
+
+                # Logo a la izquierda
+                (
+                    'ALIGN',
+                    (0, 0),
+                    (0, 0),
+                    'LEFT'
+                ),
+
+                # Texto centrado
+                (
+                    'ALIGN',
+                    (1, 0),
+                    (1, 0),
+                    'CENTER'
+                ),
+
+                (
+                    'LEFTPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    0
+                ),
+
+                (
+                    'RIGHTPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    0
+                ),
+
+                (
+                    'TOPPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    0
+                ),
+
+                (
+                    'BOTTOMPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    0
+                ),
+            ])
+        )
+
+
+        elementos.append(tabla_header)
+
+        elementos.append(
+            Spacer(1, 0.3 * cm)
+        )
+
+
+
+        tabla_fecha = Table(
+            [
+                [
+                    Paragraph(
+                        '<b>Ciudad</b>',
+                        estilo_celda_negrita
+                    ),
+                    Paragraph(
+                        escapar_pdf(ciudad),
+                        estilo_celda
+                    ),
+
+                    Paragraph(
+                        '<b>Fecha</b>',
+                        estilo_celda_negrita
+                    ),
+                    Paragraph(
+                        escapar_pdf(fecha),
+                        estilo_celda
+                    ),
+                ]
+            ],
+            colWidths=[
+                2.2 * cm,
+                5.5 * cm,
+                2 * cm,
+                5.5 * cm,
+            ]
+        )
+
+        tabla_fecha.setStyle(
+            TableStyle([
+                (
+                    'GRID',
+                    (0, 0),
+                    (-1, -1),
+                    0.5,
+                    colors.grey
+                ),
+                (
+                    'VALIGN',
+                    (0, 0),
+                    (-1, -1),
+                    'MIDDLE'
+                ),
+                (
+                    'BACKGROUND',
+                    (0, 0),
+                    (0, 0),
+                    colors.HexColor('#eeeeee')
+                ),
+                (
+                    'BACKGROUND',
+                    (2, 0),
+                    (2, 0),
+                    colors.HexColor('#eeeeee')
+                ),
+                (
+                    'LEFTPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    5
+                ),
+                (
+                    'RIGHTPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    5
+                ),
+                (
+                    'TOPPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    6
+                ),
+                (
+                    'BOTTOMPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    6
+                ),
+            ])
+        )
+
+        elementos.append(tabla_fecha)
+
+
+        # =========================================
+        # CAMBIO DE CUSTODIA
+        # =========================================
+
+        elementos.append(
+            Paragraph(
+                'CAMBIO DE CUSTODIO Y UBICACIÓN',
+                
+            )
+        )
+
+
+        tabla_cambio = Table(
+            [
+                 [
+                    Paragraph('<b>CAMBIO DE CUSTODIO Y UBICACIÓN</b>', estilo_celda_negrita), 
+                    ''
+                ],
+
+
+                [
+                    Paragraph(
+                        '<b>INFORMACIÓN ANTERIOR</b>',
+                        estilo_celda_negrita
+                    ),
+                    Paragraph(
+                        '<b>NUEVA INFORMACIÓN</b>',
+                        estilo_celda_negrita
+                    ),
+                ],
+                [
+                    Paragraph(
+                        (
+                            '<b>Custodio:</b><br/>'
+                            f'{escapar_pdf(anterior_custodio)}'
+                            '<br/><br/>'
+                            '<b>Ubicación:</b><br/>'
+                            f'{escapar_pdf(anterior_ubicacion)}'
+                        ),
+                        estilo_normal
+                    ),
+                    Paragraph(
+                        (
+                            '<b>Custodio:</b><br/>'
+                            f'{escapar_pdf(nuevo_custodio)}'
+                            '<br/><br/>'
+                            '<b>Ubicación:</b><br/>'
+                            f'{escapar_pdf(nueva_ubicacion)}'
+                        ),
+                        estilo_normal
+                    ),
+                ]
+            ],
+            colWidths=[
+                8.5 * cm,
+                8.5 * cm,
+            ]
+        )
+
+        # 2. Aplicamos el TableStyle para fusionar y dar formato
+        tabla_cambio.setStyle(TableStyle([
+            # Fusión: Une columna 0 a columna 1 en la fila 0
+            ('SPAN', (0, 0), (1, 0)),
+            
+            # Alineación centrada para el título principal (fila 0)
+            ('ALIGN', (0, 0), (1, 0), 'CENTER'),
+            
+            # Fondo decorativo para diferenciar el título principal (opcional)
+            ('BACKGROUND', (0, 0), (1, 0), colors.lightgrey),
+            
+            # Configuración de bordes para toda la tabla
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ]))
+
+        tabla_cambio.setStyle(
+            TableStyle([
+                (
+                    'GRID',
+                    (0, 0),
+                    (-1, -1),
+                    0.6,
+                    colors.grey
+                ),
+                (
+                    'BACKGROUND',
+                    (0, 0),
+                    (-1, 0),
+                    colors.HexColor('#eeeeee')
+                ),
+                (
+                    'VALIGN',
+                    (0, 0),
+                    (-1, -1),
+                    'TOP'
+                ),
+                (
+                    'LEFTPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    8
+                ),
+                (
+                    'RIGHTPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    8
+                ),
+                (
+                    'TOPPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    8
+                ),
+                (
+                    'BOTTOMPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    8
+                ),
+            ])
+        )
+
+        elementos.append(tabla_cambio)
+
+
+        # =========================================
+        # DETALLE DE EQUIPOS
+        # =========================================
+
+        elementos.append(
+            Paragraph(
+                'DETALLE DE LOS EQUIPOS',
+                estilo_seccion
+            )
+        )
+
+
+        encabezados_equipos = [
+            'N.º',
+            'Código',
+            'Tipo',
+            'Marca',
+            'Modelo',
+            'N.º de serie',
+            'Estado',
+        ]
+
+
+        filas_equipos = [
+            [
+                Paragraph(
+                    f'<b>{encabezado}</b>',
+                    estilo_celda_negrita
+                )
+                for encabezado in encabezados_equipos
+            ]
+        ]
+
+
+        for indice, equipo in enumerate(
+            equipos,
+            start=1
+        ):
+
+            filas_equipos.append(
+                [
+                    Paragraph(
+                        str(indice),
+                        estilo_celda
+                    ),
+
+                    Paragraph(
+                        escapar_pdf(
+                            equipo.get('codigo')
+                        ),
+                        estilo_celda
+                    ),
+
+                    Paragraph(
+                        escapar_pdf(
+                            equipo.get('descripcion')
+                        ),
+                        estilo_celda
+                    ),
+
+                    Paragraph(
+                        escapar_pdf(
+                            equipo.get('marca')
+                        ),
+                        estilo_celda
+                    ),
+
+                    Paragraph(
+                        escapar_pdf(
+                            equipo.get('modelo')
+                        ),
+                        estilo_celda
+                    ),
+
+                    Paragraph(
+                        escapar_pdf(
+                            equipo.get('serie')
+                        ),
+                        estilo_celda
+                    ),
+
+                    Paragraph(
+                        escapar_pdf(
+                            equipo.get('estado')
+                        ),
+                        estilo_celda
+                    ),
+                ]
+            )
+
+
+        if len(filas_equipos) == 1:
+
+            filas_equipos.append(
+                [
+                    Paragraph(
+                        'Sin equipos agregados',
+                        estilo_celda
+                    ),
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                ]
+            )
+
+
+        tabla_equipos = Table(
+            filas_equipos,
+            colWidths=[
+                0.7 * cm,
+                2.1 * cm,
+                3.5 * cm,
+                2.2 * cm,
+                2.7 * cm,
+                3 * cm,
+                2.2 * cm,
+            ],
+            repeatRows=1
+        )
+
+
+        tabla_equipos.setStyle(
+            TableStyle([
+                (
+                    'GRID',
+                    (0, 0),
+                    (-1, -1),
+                    0.5,
+                    colors.grey
+                ),
+                (
+                    'BACKGROUND',
+                    (0, 0),
+                    (-1, 0),
+                    colors.HexColor('#eeeeee')
+                ),
+                (
+                    'VALIGN',
+                    (0, 0),
+                    (-1, -1),
+                    'MIDDLE'
+                ),
+                (
+                    'ALIGN',
+                    (0, 0),
+                    (0, -1),
+                    'CENTER'
+                ),
+                (
+                    'LEFTPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    3
+                ),
+                (
+                    'RIGHTPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    3
+                ),
+                (
+                    'TOPPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    4
+                ),
+                (
+                    'BOTTOMPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    4
+                ),
+            ])
+        )
+
+        elementos.append(tabla_equipos)
+
+
+        # =========================================
+        # PERIFÉRICOS
+        # =========================================
+
+        perifericos = []
+
+        for indice, equipo in enumerate(
+            equipos,
+            start=1
+        ):
+
+            accesorios = []
+
+            if equipo.get('teclado'):
+                accesorios.append('Teclado')
+
+            if equipo.get('mouse'):
+                accesorios.append('Mouse')
+
+            if accesorios:
+
+                perifericos.append(
+                    [
+                        Paragraph(
+                            f'<b>Equipo {indice}</b>',
+                            estilo_celda
+                        ),
+
+                        Paragraph(
+                            escapar_pdf(
+                                ', '.join(accesorios)
+                            ),
+                            estilo_celda
+                        ),
+                    ]
+                )
+
+
+        if perifericos:
+
+            elementos.append(
+                Spacer(1, 0.3 * cm)
+            )
+
+            elementos.append(
+                Paragraph(
+                    '<b>PERIFÉRICOS INCLUIDOS</b>',
+                    estilo_normal
+                )
+            )
+
+
+            tabla_perifericos = Table(
+                perifericos,
+                colWidths=[
+                    3 * cm,
+                    14.4 * cm,
+                ]
+            )
+
+
+            tabla_perifericos.setStyle(
+                TableStyle([
+                    (
+                        'GRID',
+                        (0, 0),
+                        (-1, -1),
+                        0.5,
+                        colors.grey
+                    ),
+                    (
+                        'BACKGROUND',
+                        (0, 0),
+                        (0, -1),
+                        colors.HexColor('#eeeeee')
+                    ),
+                    (
+                        'LEFTPADDING',
+                        (0, 0),
+                        (-1, -1),
+                        5
+                    ),
+                    (
+                        'RIGHTPADDING',
+                        (0, 0),
+                        (-1, -1),
+                        5
+                    ),
+                    (
+                        'TOPPADDING',
+                        (0, 0),
+                        (-1, -1),
+                        5
+                    ),
+                    (
+                        'BOTTOMPADDING',
+                        (0, 0),
+                        (-1, -1),
+                        5
+                    ),
+                ])
+            )
+
+            elementos.append(tabla_perifericos)
+
+
+        # =========================================
+        # ESPECIFICACIONES TÉCNICAS
+        # =========================================
+
+        equipos_con_especificaciones = []
+
+
+        for indice, equipo in enumerate(
+            equipos,
+            start=1
+        ):
+
+            especificaciones = []
+
+            campos_especificaciones = [
+                (
+                    'Procesador',
+                    equipo.get('procesador')
+                ),
+                (
+                    'Memoria RAM',
+                    equipo.get('memoria')
+                ),
+                (
+                    'Disco',
+                    equipo.get('disco')
+                ),
+                (
+                    'Sistema operativo',
+                    equipo.get('sistema_operativo')
+                ),
+            ]
+
+
+            for nombre, valor in campos_especificaciones:
+
+                if texto_pdf(valor):
+
+                    especificaciones.append(
+                        [
+                            Paragraph(
+                                f'<b>{nombre}</b>',
+                                estilo_celda_negrita
+                            ),
+
+                            Paragraph(
+                                escapar_pdf(valor),
+                                estilo_celda
+                            ),
+                        ]
+                    )
+
+
+            if especificaciones:
+
+                equipos_con_especificaciones.append(
+                    {
+                        'numero': indice,
+                        'codigo': equipo.get('codigo'),
+                        'descripcion': equipo.get(
+                            'descripcion'
+                        ),
+                        'datos': especificaciones,
+                    }
+                )
+
+
+        if equipos_con_especificaciones:
+
+            elementos.append(
+                Paragraph(
+                    'ESPECIFICACIONES TÉCNICAS',
+                    estilo_seccion
+                )
+            )
+
+
+            for item in equipos_con_especificaciones:
+
+                titulo_equipo = (
+                    f'<b>Equipo {item["numero"]}</b> - '
+                    f'{escapar_pdf(item["descripcion"])} '
+                    f'({escapar_pdf(item["codigo"])})'
+                )
+
+
+                elementos.append(
+                    Paragraph(
+                        titulo_equipo,
+                        estilo_normal
+                    )
+                )
+
+
+                tabla_especificaciones = Table(
+                    item['datos'],
+                    colWidths=[
+                        4.5 * cm,
+                        12.9 * cm,
+                    ]
+                )
+
+
+                tabla_especificaciones.setStyle(
+                    TableStyle([
+                        (
+                            'GRID',
+                            (0, 0),
+                            (-1, -1),
+                            0.5,
+                            colors.grey
+                        ),
+                        (
+                            'BACKGROUND',
+                            (0, 0),
+                            (0, -1),
+                            colors.HexColor('#eeeeee')
+                        ),
+                        (
+                            'VALIGN',
+                            (0, 0),
+                            (-1, -1),
+                            'MIDDLE'
+                        ),
+                        (
+                            'LEFTPADDING',
+                            (0, 0),
+                            (-1, -1),
+                            5
+                        ),
+                        (
+                            'RIGHTPADDING',
+                            (0, 0),
+                            (-1, -1),
+                            5
+                        ),
+                        (
+                            'TOPPADDING',
+                            (0, 0),
+                            (-1, -1),
+                            5
+                        ),
+                        (
+                            'BOTTOMPADDING',
+                            (0, 0),
+                            (-1, -1),
+                            5
+                        ),
+                    ])
+                )
+
+
+                elementos.append(
+                    tabla_especificaciones
+                )
+
+                elementos.append(
+                    Spacer(1, 0.3 * cm)
+                )
+
+
+        # =========================================
+        # OBSERVACIONES
+        # =========================================
+
+        elementos.append(
+            Paragraph(
+                'OBSERVACIONES',
+                estilo_seccion
+            )
+        )
+
+
+        texto_observaciones = escapar_pdf(
+            observaciones
+        ).replace('\n', '<br/>')
+
+
+        elementos.append(
+            Table(
+                [
+                    [
+                        Paragraph(
+                            texto_observaciones,
+                            estilo_normal
+                        )
+                    ]
+                ],
+                colWidths=[
+                    17.4 * cm
+                ],
+                style=[
+                    (
+                        'BOX',
+                        (0, 0),
+                        (-1, -1),
+                        0.6,
+                        colors.grey
+                    ),
+                    (
+                        'MINROWHEIGHT',
+                        (0, 0),
+                        (-1, -1),
+                        3 * cm
+                    ),
+                    (
+                        'LEFTPADDING',
+                        (0, 0),
+                        (-1, -1),
+                        8
+                    ),
+                    (
+                        'RIGHTPADDING',
+                        (0, 0),
+                        (-1, -1),
+                        8
+                    ),
+                    (
+                        'TOPPADDING',
+                        (0, 0),
+                        (-1, -1),
+                        8
+                    ),
+                    (
+                        'BOTTOMPADDING',
+                        (0, 0),
+                        (-1, -1),
+                        8
+                    ),
+                ]
+            )
+        )
+
+
+        # =========================================
+        # RESPONSABLES Y FIRMAS
+        # =========================================
+
+        elementos.append(
+            Paragraph(
+                'RESPONSABLES',
+                estilo_seccion
+            )
+        )
+
+
+        tabla_firmas = Table(
+            [
+                [
+                    Paragraph(
+                        (
+                            '<br/><br/><br/><br/>'
+                            '<b>____________________________</b>'
+                            '<br/>'
+                            '<b>ELABORADO POR</b>'
+                            '<br/><br/>'
+                            f'{escapar_pdf(elaborado_por)}'
+                            '<br/>'
+                            f'{escapar_pdf(cargo_elaborado)}'
+                        ),
+                        estilo_normal
+                    ),
+
+                    Paragraph(
+                        (
+                            '<br/><br/><br/><br/>'
+                            '<b>____________________________</b>'
+                            '<br/>'
+                            '<b>SUPERVISADO POR</b>'
+                            '<br/><br/>'
+                            f'{escapar_pdf(supervisado_por)}'
+                            '<br/>'
+                            f'{escapar_pdf(cargo_supervisado)}'
+                        ),
+                        estilo_normal
+                    ),
+                ]
+            ],
+            colWidths=[
+                8.7 * cm,
+                8.7 * cm,
+            ]
+        )
+
+
+        tabla_firmas.setStyle(
+            TableStyle([
+                (
+                    'ALIGN',
+                    (0, 0),
+                    (-1, -1),
+                    'CENTER'
+                ),
+                (
+                    'VALIGN',
+                    (0, 0),
+                    (-1, -1),
+                    'TOP'
+                ),
+                (
+                    'BOX',
+                    (0, 0),
+                    (-1, -1),
+                    0.5,
+                    colors.grey
+                ),
+                (
+                    'INNERGRID',
+                    (0, 0),
+                    (-1, -1),
+                    0.5,
+                    colors.grey
+                ),
+                (
+                    'LEFTPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    8
+                ),
+                (
+                    'RIGHTPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    8
+                ),
+                (
+                    'BOTTOMPADDING',
+                    (0, 0),
+                    (-1, -1),
+                    10
+                ),
+            ])
+        )
+
+        elementos.append(tabla_firmas)
+
+
+        # Construir PDF
+        documento.build(
+            elementos,
+            onFirstPage=dibujar_pie_pagina,
+            onLaterPages=dibujar_pie_pagina,
+        )
+
+
+        return respuesta
+
+
+    except Exception as error:
+
+        print(
+            f'Error al generar informe PDF: {error}'
+        )
+
+        return JsonResponse(
+            {
+                'error': str(error)
+            },
+            status=500
+        )
+# -----------------------------
+# ESCANEO OPTIMIZADO CON HILOS
+# -----------------------------
+
+def probar_ip(ip):
+    """
+    Intenta conectarse a un host en el puerto 135 (NetBIOS)
+    """
+    try:
+        socket.setdefaulttimeout(0.1)
+
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((ip, 135))
+            hostname = socket.getfqdn(ip)
+
+            return {
+                'ip': ip,
+                'hostname': hostname
+            }
+
+    except:
+        return None
+
+
+def escanear_red():
+    ip_bases = ['172.16.18.', '172.16.19.']
+    ips = [base + str(i) for base in ip_bases for i in range(1, 255)]
+
+    dispositivos = []
+    max_workers = 100  # ajustable según tu red
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = [executor.submit(probar_ip, ip) for ip in ips]
+
+        for future in as_completed(futures):
+            resultado = future.result()
+            if resultado:
+                dispositivos.append(resultado)
+
+    return dispositivos
+
+
+# -----------------------------
+# LECTURA DB + CORRELACIÓN
+# -----------------------------
+
+
+def leer_inventario(request):
+    try:
+
+        # ==========================
+        # 1. Leer inventario
+        # ==========================
+        inventario = list(
+            Inventario.objects.filter(
+                descripcion__in=[
+                    'COMPUTADOR DE ESCRITORIO',
+                    'COMPUTADOR PORTATIL',
+                    'IMPRESORA ALTO VOLUMEN'
+                ]
+            ).order_by(
+                'unidad_administrativa',
+                'ubicacion',
+                'descripcion'
+            ).values(
+                'unidad_administrativa',
+                'ubicacion',
+                'descripcion',
+                'codigo_actual',
+                'nombre_usuario'
+            )
+        )
+
+        # ==========================
+        # 2. Obtener el último lote
+        # ==========================
+
+        ultima_fecha = EscaneoRed.objects.aggregate(
+            Max('fecha_lote')
+        )['fecha_lote__max']
+
+        hostnames_por_activo = {}
+
+        if ultima_fecha:
+
+            ultimo_escaneo = EscaneoRed.objects.filter(
+                fecha_lote=ultima_fecha
+            )
+
+            for equipo in ultimo_escaneo:
+
+                hostnames_por_activo[equipo.codigo_actual] = {
+                    'hostname': equipo.hostname,
+                    'ip': equipo.ip
+                }
+
+        print(f"Último lote: {ultima_fecha}")
+        print(f"Equipos conectados: {len(hostnames_por_activo)}")
+
+        # ==========================
+        # 3. Relacionar inventario
+        # ==========================
+
+        for item in inventario:
+
+            codigo = str(item['codigo_actual']).strip()
+
+            if codigo in hostnames_por_activo:
+
+                item['hostname'] = hostnames_por_activo[codigo]['hostname']
+                item['ip'] = hostnames_por_activo[codigo]['ip']
+                item['conectado'] = True
+
+            else:
+
+                item['hostname'] = ''
+                item['ip'] = ''
+                item['conectado'] = False
+
+        return render(
+            request,
+            'dispositivos/lista_dispositivos.html',
+            {
+                'dispositivos': inventario,
+                'title': f'Inventario - Último escaneo {ultima_fecha}'
+            }
+        )
+
+    except Exception as e:
+        return HttpResponse(f"Error: {e}")

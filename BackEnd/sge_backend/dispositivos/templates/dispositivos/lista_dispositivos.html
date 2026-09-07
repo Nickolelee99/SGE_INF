@@ -1,0 +1,44 @@
+{% extends 'dispositivos/base.html' %}
+
+{% block title %}Lista de Dispositivos{% endblock %}
+
+{% block content %}
+    <h1>Lista de Dispositivos</h1>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>UNIDAD ADMINISTRATIVA</th>
+                <th>UBICACIÓN</th>
+                <th>TIPO</th>
+                <th>ACTIVO FIJO</th>
+                <th>NOMBRE USUARIO</th>
+                <th>HOSTNAME</th>
+                <th>CONECTADO</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for dispositivo in dispositivos %}
+            <tr>
+                <td>{{ dispositivo.unidad_administrativa }}</td>
+                <td>{{ dispositivo.ubicacion }}</td>
+                <td>{{ dispositivo.descripcion }}</td>
+                <td>{{ dispositivo.codigo_actual }}</td>
+                <td>{{ dispositivo.nombre_usuario }}</td>
+                <td>{{ dispositivo.hostname|default:"-" }}</td>
+                <td>
+                    {% if dispositivo.hostname %}
+                        <span style="color:green;">✓</span>
+                    {% else %}
+                        <span style="color:red;">X</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
+
+<footer style="position: fixed; bottom: 0; width: 100%; text-align: center; background-color: #343a40; color: white; padding: 10px;">
+    © Contraloría General del Estado - Ecuador
+    Dirección Provincial de Guayas - 2025
+</footer>

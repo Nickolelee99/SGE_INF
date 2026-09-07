@@ -1,0 +1,1876 @@
+{% extends 'dispositivos/base.html' %}
+
+{% block title %}
+Crear informe técnico
+{% endblock %}
+
+{% block content %}
+
+<style>
+    .content {
+        text-align: left;
+    }
+
+    .titulo-pagina {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .seccion {
+        background: white;
+        border-radius: 8px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .seccion-titulo {
+        border-bottom: 2px solid #2c3e50;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+
+    .equipo-card {
+        border: 1px solid #ced4da;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        position: relative;
+    }
+
+    .titulo-equipo {
+        font-weight: bold;
+        font-size: 18px;
+        margin-bottom: 15px;
+    }
+
+    .datos-actuales {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 6px;
+    }
+
+    .btn-buscar {
+        white-space: nowrap;
+    }
+
+    .perifericos {
+        display: none;
+        margin-top: 15px;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+    }
+
+    .btn-eliminar-equipo {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+    }
+
+    .btn-agregar-equipo {
+        margin-top: 10px;
+    }
+
+    #btn-generar-pdf {
+        padding: 12px 35px;
+        font-size: 17px;
+    }
+</style>
+
+
+<div class="container-fluid">
+
+    <div class="titulo-pagina">
+        <h2>
+            <i class="fas fa-file-alt"></i>
+            Crear informe técnico
+        </h2>
+    </div>
+
+
+    <!-- INFORMACIÓN DEL INFORME -->
+    <div class="seccion">
+
+        <div class="seccion-titulo">
+            Información del informe
+        </div>
+
+        <div class="row">
+
+            <div class="col-md-4">
+                <label class="form-label">
+                    Número de informe
+                </label>
+
+                <input
+                    type="text"
+                    class="form-control"
+                    id="numeroInforme"
+                    placeholder="Ej. IT-001-2026"
+                >
+            </div>
+
+
+            <div class="col-md-4">
+                <label class="form-label">
+                    Ciudad
+                </label>
+
+                <input
+                    type="text"
+                    class="form-control"
+                    value="Guayaquil"
+                    readonly
+                >
+            </div>
+
+
+            <div class="col-md-4">
+                <label class="form-label">
+                    Fecha
+                </label>
+
+                <input
+                    type="date"
+                    class="form-control"
+                    id="fechaInforme"
+                >
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- CAMBIO DE CUSTODIA -->
+    <div class="seccion">
+
+        <div class="seccion-titulo">
+            Cambio de custodio y ubicación
+        </div>
+
+        <div class="row">
+
+            <div class="col-md-6">
+
+                <div class="datos-actuales">
+
+                    <h6>
+                        <i class="fas fa-history"></i>
+                        Información anterior
+                    </h6>
+
+                    <label class="form-label mt-2">
+                        Anterior custodio
+                    </label>
+
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="anteriorCustodio"
+                        readonly
+                    >
+
+
+                    <label class="form-label mt-3">
+                        Anterior ubicación
+                    </label>
+
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="anteriorUbicacion"
+                        readonly
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-6">
+
+                <h6>
+                    <i class="fas fa-arrow-right"></i>
+                    Nueva información
+                </h6>
+
+                <label class="form-label mt-2">
+                    Nuevo custodio
+                </label>
+
+                <input
+                    type="text"
+                    class="form-control"
+                    id="nuevoCustodio"
+                >
+
+
+                <label class="form-label mt-3">
+                    Nueva ubicación
+                </label>
+
+                <input
+                    type="text"
+                    class="form-control"
+                    id="nuevaUbicacion"
+                >
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- BUSCAR EQUIPOS -->
+    <div class="seccion">
+
+        <div class="seccion-titulo">
+            Buscar equipos
+        </div>
+
+        <div class="mb-3">
+
+            <label class="form-label">
+                Buscar equipos por:
+            </label>
+
+            <div class="form-check">
+                <input
+                    class="form-check-input"
+                    type="radio"
+                    name="modoBusqueda"
+                    id="buscarPorCodigo"
+                    value="codigo"
+                    checked
+                >
+
+                <label
+                    class="form-check-label"
+                    for="buscarPorCodigo"
+                >
+                    Código de equipo
+                </label>
+            </div>
+
+            <div class="form-check">
+                <input
+                    class="form-check-input"
+                    type="radio"
+                    name="modoBusqueda"
+                    id="buscarPorPersona"
+                    value="persona"
+                >
+
+                <label
+                    class="form-check-label"
+                    for="buscarPorPersona"
+                >
+                    Persona
+                </label>
+            </div>
+
+        </div>
+
+
+        <!-- BÚSQUEDA POR PERSONA -->
+
+        <div
+            id="busquedaPersona"
+            style="display: none;"
+        >
+
+            <label
+                for="selectPersona"
+                class="form-label"
+            >
+                Seleccione una persona
+            </label>
+
+            <select
+                id="selectPersona"
+                class="form-select"
+            >
+
+                <option value="">
+                    Seleccione una persona
+                </option>
+
+            </select>
+
+
+            <div
+                id="mensajePersona"
+                class="mt-3"
+            ></div>
+
+
+            <!-- LISTA DE EQUIPOS -->
+
+            <div
+                id="listaEquiposPersona"
+                class="mt-4"
+                style="display: none;"
+            >
+
+                <h6>
+                    Equipos asignados a la persona
+                </h6>
+
+                <div
+                    id="equiposPersona"
+                    class="mt-3"
+                ></div>
+
+
+                <button
+                    type="button"
+                    class="btn btn-primary mt-3"
+                    id="btnAgregarSeleccionados"
+                >
+                    <i class="fas fa-plus"></i>
+                    Agregar equipos seleccionados
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- EQUIPOS -->
+
+    
+
+    <!-- EQUIPOS -->
+    <div class="seccion">
+
+        <div class="seccion-titulo">
+            Detalle de equipos
+        </div>
+
+        <div id="contenedorEquipos"></div>
+
+        <button
+            type="button"
+            class="btn btn-outline-primary btn-agregar-equipo"
+            id="btnAgregarEquipo"
+        >
+            <i class="fas fa-plus"></i>
+            Agregar otro equipo
+        </button>
+
+    </div>
+
+
+    <!-- OBSERVACIONES -->
+    <div class="seccion">
+
+        <div class="seccion-titulo">
+            Observaciones
+        </div>
+
+        <textarea
+            class="form-control"
+            id="observaciones"
+            rows="5"
+            placeholder="Ingrese las observaciones del informe técnico"
+        ></textarea>
+
+    </div>
+
+
+    <!-- RESPONSABLES -->
+    <!-- =========================================
+     RESPONSABLES
+     ========================================= -->
+
+    <div class="seccion">
+        <h3>RESPONSABLES</h3>
+
+        <div class="responsables-container">
+
+            <!-- ELABORADO POR -->
+            <div class="responsable-box">
+
+                <h4>Elaborado por</h4>
+
+                <div class="campo">
+                    <label for="elaborado_por">
+                        Nombre:
+                    </label>
+
+                    <select
+                        id="elaborado_por"
+                        name="elaborado_por"
+                        onchange="actualizarCargo('elaborado_por', 'cargo_elaborado')"
+                    >
+                        <option value="">Seleccione un nombre</option>
+
+                        {% for nombre, cargo in responsables.items %}
+                            <option
+                                value="{{ nombre }}"
+                                data-cargo="{{ cargo }}"
+                            >
+                                {{ nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="campo">
+                    <label for="cargo_elaborado">
+                        Cargo:
+                    </label>
+
+                    <input
+                        type="text"
+                        id="cargo_elaborado"
+                        name="cargo_elaborado"
+                        readonly
+                        placeholder="El cargo se completará automáticamente"
+                    >
+                </div>
+
+            </div>
+
+
+            <!-- SUPERVISADO POR -->
+            <div class="responsable-box">
+
+                <h4>Supervisado por</h4>
+
+                <div class="campo">
+                    <label for="supervisado_por">
+                        Nombre:
+                    </label>
+
+                    <select
+                        id="supervisado_por"
+                        name="supervisado_por"
+                        onchange="actualizarCargo('supervisado_por', 'cargo_supervisado')"
+                    >
+                        <option value="">Seleccione un nombre</option>
+
+                        {% for nombre, cargo in responsables.items %}
+                            <option
+                                value="{{ nombre }}"
+                                data-cargo="{{ cargo }}"
+                            >
+                                {{ nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="campo">
+                    <label for="cargo_supervisado">
+                        Cargo:
+                    </label>
+
+                    <input
+                        type="text"
+                        id="cargo_supervisado"
+                        name="cargo_supervisado"
+                        readonly
+                        placeholder="El cargo se completará automáticamente"
+                    >
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- GENERAR PDF -->
+    <div class="text-center mb-5">
+
+        <button
+            type="button"
+            class="btn btn-success"
+            id="btn-generar-pdf"
+        >
+            <i class="fas fa-file-pdf"></i>
+            Generar PDF
+        </button>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    let contadorEquipos = 0;
+
+    // =====================================================
+    // BÚSQUEDA POR PERSONA
+    // =====================================================
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+        const radioCodigo =
+            document.getElementById('buscarPorCodigo');
+
+        const radioPersona =
+            document.getElementById('buscarPorPersona');
+
+        const busquedaPersona =
+            document.getElementById('busquedaPersona');
+
+        const selectPersona =
+            document.getElementById('selectPersona');
+
+
+        // Cuando selecciona "Código"
+        radioCodigo.addEventListener('change', function () {
+
+            if (this.checked) {
+
+                busquedaPersona.style.display = 'none';
+
+            }
+
+        });
+
+
+        // Cuando selecciona "Persona"
+        radioPersona.addEventListener('change', function () {
+
+            if (this.checked) {
+
+                busquedaPersona.style.display = 'block';
+
+                cargarPersonas();
+
+            }
+
+        });
+
+
+        // Cuando selecciona una persona
+        selectPersona.addEventListener('change', function () {
+
+            const nombre =
+                this.value;
+
+            if (nombre) {
+
+                cargarEquiposPersona(nombre);
+
+            } else {
+
+                document.getElementById(
+                    'listaEquiposPersona'
+                ).style.display = 'none';
+
+            }
+
+        });
+
+
+        // Botón para agregar equipos seleccionados
+        document
+            .getElementById('btnAgregarSeleccionados')
+            .addEventListener(
+                'click',
+                agregarEquiposSeleccionados
+            );
+
+    });
+
+
+
+    async function cargarPersonas() {
+
+        const select =
+            document.getElementById('selectPersona');
+
+        const mensaje =
+            document.getElementById('mensajePersona');
+
+
+        mensaje.innerHTML = `
+            <div class="alert alert-info">
+                Cargando personas...
+            </div>
+        `;
+
+
+        try {
+
+            const respuesta =
+                await fetch(
+                    '/dispositivos/api/personas/'
+                );
+
+
+            const datos =
+                await respuesta.json();
+
+
+            if (
+                !respuesta.ok ||
+                !datos.encontrado
+            ) {
+
+                mensaje.innerHTML = `
+                    <div class="alert alert-danger">
+                        ${datos.mensaje || 'No se pudieron cargar las personas.'}
+                    </div>
+                `;
+
+                return;
+            }
+
+
+            // Limpiar opciones anteriores
+            select.innerHTML = `
+                <option value="">
+                    Seleccione una persona
+                </option>
+            `;
+
+
+            datos.personas.forEach(function (persona) {
+
+                const opcion =
+                    document.createElement('option');
+
+                opcion.value = persona;
+
+                opcion.textContent = persona;
+
+                select.appendChild(opcion);
+
+            });
+
+
+            mensaje.innerHTML = '';
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            mensaje.innerHTML = `
+                <div class="alert alert-danger">
+                    Error al cargar las personas.
+                </div>
+            `;
+
+        }
+
+    }
+
+    async function cargarEquiposPersona(nombre) {
+
+    const mensaje =
+        document.getElementById('mensajePersona');
+
+    const contenedor =
+        document.getElementById('equiposPersona');
+
+    const lista =
+        document.getElementById('listaEquiposPersona');
+
+
+    mensaje.innerHTML = `
+        <div class="alert alert-info">
+            Buscando equipos de ${nombre}...
+        </div>
+    `;
+
+
+    contenedor.innerHTML = '';
+
+    lista.style.display = 'none';
+
+
+    try {
+
+        const respuesta =
+            await fetch(
+                `/dispositivos/api/persona/${encodeURIComponent(nombre)}/equipos/`
+            );
+
+
+        const datos =
+            await respuesta.json();
+
+
+        if (
+            !respuesta.ok ||
+            !datos.encontrado
+        ) {
+
+            mensaje.innerHTML = `
+                <div class="alert alert-warning">
+                    ${datos.mensaje || 'No se encontraron equipos.'}
+                </div>
+            `;
+
+            return;
+        }
+
+
+        mensaje.innerHTML = `
+            <div class="alert alert-success">
+                Se encontraron
+                <strong>${datos.total}</strong>
+                equipo(s) asignado(s) a
+                <strong>${datos.persona}</strong>.
+            </div>
+        `;
+
+
+        datos.equipos.forEach(function (equipo, indice) {
+
+            const idCheckbox =
+                `equipo-persona-${indice}`;
+
+
+            const item =
+                document.createElement('div');
+
+            item.className =
+                'form-check border rounded p-3 mb-2';
+
+
+            item.innerHTML = `
+
+                <input
+                    class="form-check-input checkbox-equipo-persona"
+                    type="checkbox"
+                    id="${idCheckbox}"
+                    value="${equipo.codigo_actual}"
+                    data-equipo='${JSON.stringify(equipo)}'
+                >
+
+                <label
+                    class="form-check-label w-100"
+                    for="${idCheckbox}"
+                >
+
+                    <strong>
+                        ${equipo.codigo_actual}
+                    </strong>
+
+                    <br>
+
+                    ${equipo.descripcion || 'Sin descripción'}
+
+                    <br>
+
+                    <small class="text-muted">
+
+                        ${equipo.marca || ''}
+                        ${equipo.modelo ? ' - ' + equipo.modelo : ''}
+
+                        ${equipo.serie
+                            ? ' | Serie: ' + equipo.serie
+                            : ''
+                        }
+
+                    </small>
+
+                </label>
+
+            `;
+
+
+            contenedor.appendChild(item);
+
+        });
+
+
+        lista.style.display = 'block';
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        mensaje.innerHTML = `
+            <div class="alert alert-danger">
+                Error al consultar los equipos.
+            </div>
+        `;
+
+    }
+
+    }
+
+    function agregarEquiposSeleccionados() {
+
+        const seleccionados =
+            document.querySelectorAll(
+                '.checkbox-equipo-persona:checked'
+            );
+
+
+        if (seleccionados.length === 0) {
+
+            alert(
+                'Seleccione al menos un equipo.'
+            );
+
+            return;
+
+        }
+
+
+        let equiposAgregados = 0;
+
+
+        seleccionados.forEach(function (checkbox) {
+
+            const equipo =
+                JSON.parse(
+                    checkbox.dataset.equipo
+                );
+
+
+            // Verificar si ya existe el código
+            const equiposActuales =
+                document.querySelectorAll(
+                    '.codigo-activo'
+                );
+
+
+            let yaExiste = false;
+
+
+            equiposActuales.forEach(function (input) {
+
+                if (
+                    input.value.trim() ===
+                    equipo.codigo_actual.trim()
+                ) {
+
+                    yaExiste = true;
+
+                }
+
+            });
+
+
+            if (yaExiste) {
+
+                return;
+
+            }
+
+
+            // Crear una nueva tarjeta
+            agregarEquipo();
+
+
+            // Obtener la última tarjeta creada
+            const tarjeta =
+                document.getElementById(
+                    `equipo-${contadorEquipos}`
+                );
+
+
+            // Colocar los datos
+            tarjeta.querySelector(
+                '.codigo-activo'
+            ).value =
+                equipo.codigo_actual;
+
+
+            tarjeta.querySelector(
+                '.descripcion'
+            ).value =
+                equipo.descripcion;
+
+
+            tarjeta.querySelector(
+                '.marca'
+            ).value =
+                equipo.marca;
+
+
+            tarjeta.querySelector(
+                '.modelo'
+            ).value =
+                equipo.modelo;    
+
+
+            tarjeta.querySelector(
+                '.serie'
+            ).value =
+                equipo.serie;
+
+
+            tarjeta.querySelector(
+                '.estado'
+            ).value =
+                equipo.estado;
+
+
+            tarjeta.querySelector(
+                '.procesador'
+            ).value =
+                equipo.procesador;
+
+
+            tarjeta.querySelector(
+                '.memoria'
+            ).value =
+                equipo.memoria;
+
+
+            tarjeta.querySelector(
+                '.disco'
+            ).value =
+                equipo.disco;
+
+
+            tarjeta.querySelector(
+                '.sistema-operativo'
+            ).value =
+                equipo.sistema_operativo;
+
+
+            // Persona asignada
+            const personaAsignada =
+                tarjeta.querySelector(
+                    '.persona-asignada'
+                );
+
+
+            if (personaAsignada) {
+
+                personaAsignada.value =
+                    equipo.persona || '';
+
+            }
+
+
+            // Mostrar resultado
+            const resultado =
+                tarjeta.querySelector(
+                    `[id^="resultado-"]`
+                );
+
+
+            if (resultado) {
+
+                resultado.style.display =
+                    'block';
+
+            }
+
+
+            // Mostrar periféricos si es computador de escritorio
+            const perifericos =
+                tarjeta.querySelector(
+                    '.perifericos'
+                );
+
+
+            if (
+                perifericos &&
+                equipo.descripcion &&
+                equipo.descripcion
+                    .toUpperCase()
+                    .includes(
+                        'COMPUTADOR DE ESCRITORIO'
+                    )
+            ) {
+
+                perifericos.style.display =
+                    'block';
+
+            }
+
+
+            equiposAgregados++;
+
+        });
+
+
+        // Colocar información anterior
+        if (seleccionados.length > 0) {
+
+            const primerEquipo =
+                JSON.parse(
+                    seleccionados[0].dataset.equipo
+                );
+
+
+            const anteriorCustodio =
+                document.getElementById(
+                    'anteriorCustodio'
+                );
+
+
+            const anteriorUbicacion =
+                document.getElementById(
+                    'anteriorUbicacion'
+                );
+
+
+            if (anteriorCustodio) {
+
+                anteriorCustodio.value =
+                    primerEquipo.persona || '';
+
+            }
+
+
+            if (
+                anteriorUbicacion &&
+                !anteriorUbicacion.value
+            ) {
+
+                anteriorUbicacion.value =
+                    primerEquipo.ubicacion || '';
+
+            }
+
+        }
+
+
+        if (equiposAgregados === 0) {
+
+            alert(
+                'Los equipos seleccionados ya están agregados.'
+            );
+
+        } else {
+
+            alert(
+                `Se agregaron ${equiposAgregados} equipo(s) al informe.`
+            );
+
+        }
+
+
+        // Desmarcar las casillas
+        seleccionados.forEach(function (checkbox) {
+
+            checkbox.checked = false;
+
+        });
+
+    }
+
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+        const hoy = new Date();
+
+        const fecha =
+            hoy.getFullYear() + '-' +
+            String(hoy.getMonth() + 1).padStart(2, '0') + '-' +
+            String(hoy.getDate()).padStart(2, '0');
+
+        document.getElementById('fechaInforme').value = fecha;
+
+        agregarEquipo();
+
+    });
+
+
+    document
+        .getElementById('btnAgregarEquipo')
+        .addEventListener('click', function () {
+
+            agregarEquipo();
+
+        });
+
+
+    function agregarEquipo() {
+
+        contadorEquipos++;
+
+        const numero = contadorEquipos;
+
+        const contenedor =
+            document.getElementById('contenedorEquipos');
+
+
+        const html = `
+
+            <div
+                class="equipo-card"
+                id="equipo-${numero}"
+                data-equipo="${numero}"
+            >
+
+                <div class="titulo-equipo">
+                    Equipo ${numero}
+                </div>
+
+
+                ${numero > 1 ? `
+
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-danger btn-eliminar-equipo"
+                        onclick="eliminarEquipo(${numero})"
+                    >
+                        <i class="fas fa-trash"></i>
+                    </button>
+
+                ` : ''}
+
+
+                <div class="row align-items-end">
+
+                    <div class="col-md-8">
+
+                        <label class="form-label">
+                            Código de activo fijo
+                        </label>
+
+                        <input
+                            type="text"
+                            class="form-control codigo-activo"
+                            id="codigo-${numero}"
+                            placeholder="Ingrese el código del activo"
+                        >
+
+                    </div>
+
+
+                    <div class="col-md-4">
+
+                        <button
+                            type="button"
+                            class="btn btn-primary w-100 btn-buscar"
+                            onclick="buscarActivo(${numero})"
+                        >
+                            <i class="fas fa-search"></i>
+                            Buscar
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="resultado-${numero}"
+                    class="mt-4"
+                    style="display: none;"
+                >
+
+                    <div class="row">
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Tipo de equipo</label>
+                            <input
+                                type="text"
+                                class="form-control descripcion"
+                                readonly
+                            >
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Marca</label>
+                            <input
+                                type="text"
+                                class="form-control marca"
+                                readonly
+                            >
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Modelo</label>
+                            <input
+                                type="text"
+                                class="form-control modelo"
+                                readonly
+                            >
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-12 mb-3">
+
+                            <label class="form-label">
+                                Persona asignada
+                            </label>
+
+                            <input
+                                type="text"
+                                class="form-control persona-asignada"
+                                readonly
+                            >
+
+                        </div>
+
+                    </div>
+
+
+
+                    
+                    
+                    <div class="row">
+
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Persona asignada</label>
+                            <input
+                                type="text"
+                                class="form-control persona-asignada"
+                                readonly
+                            >
+                        </div>
+
+                    </div>
+
+
+
+                    <div class="row">
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Número de serie</label>
+                            <input
+                                type="text"
+                                class="form-control serie"
+                                readonly
+                            >
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Estado</label>
+                            <input
+                                type="text"
+                                class="form-control estado"
+                                readonly
+                            >
+                        </div>
+
+                    </div>
+
+
+                    <div class="especificaciones-tecnicas">
+
+                        <hr>
+
+                        <h6>
+                            Especificaciones técnicas
+                        </h6>
+
+
+                        <div class="row">
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">
+                                    Procesador
+                                </label>
+
+                                <input
+                                    type="text"
+                                    class="form-control procesador"
+                                    readonly
+                                >
+                            </div>
+
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">
+                                    Memoria RAM
+                                </label>
+
+                                <input
+                                    type="text"
+                                    class="form-control memoria"
+                                    readonly
+                                >
+                            </div>
+
+                        </div>
+
+
+                        <div class="row">
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">
+                                    Disco
+                                </label>
+
+                                <input
+                                    type="text"
+                                    class="form-control disco"
+                                    readonly
+                                >
+                            </div>
+
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">
+                                    Sistema operativo
+                                </label>
+
+                                <input
+                                    type="text"
+                                    class="form-control sistema-operativo"
+                                    readonly
+                                >
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="perifericos"
+                        id="perifericos-${numero}"
+                    >
+
+                        <strong>
+                            Periféricos incluidos con el computador
+                        </strong>
+
+                        <div class="form-check mt-2">
+
+                            <input
+                                class="form-check-input teclado"
+                                type="checkbox"
+                                id="teclado-${numero}"
+                            >
+
+                            <label
+                                class="form-check-label"
+                                for="teclado-${numero}"
+                            >
+                                Teclado
+                            </label>
+
+                        </div>
+
+
+                        <div class="form-check">
+
+                            <input
+                                class="form-check-input mouse"
+                                type="checkbox"
+                                id="mouse-${numero}"
+                            >
+
+                            <label
+                                class="form-check-label"
+                                for="mouse-${numero}"
+                            >
+                                Mouse
+                            </label>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="mensaje-${numero}"
+                    class="mt-3"
+                ></div>
+
+            </div>
+
+        `;
+
+        contenedor.insertAdjacentHTML(
+            'beforeend',
+            html
+        );
+
+    }
+
+
+    function actualizarCargo(nombreId, cargoId) {
+        const nombreSelect = document.getElementById(nombreId);
+        const cargoInput = document.getElementById(cargoId);
+
+        const opcionSeleccionada =
+            nombreSelect.options[nombreSelect.selectedIndex];
+
+        if (opcionSeleccionada && opcionSeleccionada.value !== "") {
+            cargoInput.value =
+                opcionSeleccionada.getAttribute("data-cargo") || "";
+        } else {
+            cargoInput.value = "";
+        }
+    }
+
+
+
+
+
+    function eliminarEquipo(numero) {
+
+        const equipo =
+            document.getElementById(`equipo-${numero}`);
+
+        if (equipo) {
+            equipo.remove();
+        }
+
+    }
+
+
+    async function buscarActivo(numero) {
+
+        const codigo =
+            document
+                .getElementById(`codigo-${numero}`)
+                .value
+                .trim();
+
+
+        if (!codigo) {
+
+            document
+                .getElementById(`mensaje-${numero}`)
+                .innerHTML = `
+                    <div class="alert alert-warning">
+                        Ingrese un código de activo.
+                    </div>
+                `;
+
+            return;
+
+        }
+
+
+        const mensaje =
+            document.getElementById(`mensaje-${numero}`);
+
+
+        mensaje.innerHTML = `
+            <div class="alert alert-info">
+                Buscando activo...
+            </div>
+        `;
+
+
+        try {
+
+            const respuesta =
+                await fetch(
+                `/dispositivos/api/activo/${encodeURIComponent(codigo)}/`
+                );
+
+
+            const datos =
+                await respuesta.json();
+
+
+            if (!respuesta.ok || !datos.encontrado) {
+
+                mensaje.innerHTML = `
+                    <div class="alert alert-danger">
+                        ${datos.mensaje || 'Activo no encontrado.'}
+                    </div>
+                `;
+
+                return;
+
+            }
+
+
+            const equipo =
+                document.getElementById(`equipo-${numero}`);
+
+
+            equipo.querySelector('.descripcion').value =
+                datos.descripcion;
+
+            equipo.querySelector('.marca').value =
+                datos.marca;
+
+            equipo.querySelector('.modelo').value =
+                datos.modelo;
+
+            equipo.querySelector('.serie').value =
+                datos.serie;
+
+            equipo.querySelector('.estado').value =
+                datos.estado;
+
+            equipo.querySelector('.procesador').value =
+                datos.procesador;
+
+            equipo.querySelector('.memoria').value =
+                datos.memoria;
+
+            equipo.querySelector('.disco').value =
+                datos.disco;
+
+            equipo.querySelector('.sistema-operativo').value =
+                datos.sistema_operativo;
+
+            equipo.querySelector('.persona-asignada').value =
+                datos.anterior_custodio || '';
+
+
+            document
+                .getElementById(`resultado-${numero}`)
+                .style.display = 'block';
+
+
+            const esComputador =
+                datos.descripcion &&
+                (
+                    datos.descripcion
+                        .toUpperCase()
+                        .includes('COMPUTADOR')
+                );
+
+
+            const perifericos =
+                document.getElementById(
+                    `perifericos-${numero}`
+                );
+
+
+            if (
+                datos.descripcion
+                    .toUpperCase()
+                    .includes('COMPUTADOR DE ESCRITORIO')
+            ) {
+
+                perifericos.style.display = 'block';
+
+            } else {
+
+                perifericos.style.display = 'none';
+
+            }
+
+
+            /*
+             * El primer equipo determina automáticamente
+             * el custodio y ubicación anteriores.
+             */
+            if (numero === 1) {
+
+                document
+                    .getElementById('anteriorCustodio')
+                    .value =
+                    datos.anterior_custodio;
+
+
+                document
+                    .getElementById('anteriorUbicacion')
+                    .value =
+                    datos.anterior_ubicacion;
+
+            }
+
+
+            mensaje.innerHTML = `
+                <div class="alert alert-success">
+                    Activo encontrado correctamente.
+                </div>
+            `;
+
+        }
+
+        catch (error) {
+
+            console.error(error);
+
+            mensaje.innerHTML = `
+                <div class="alert alert-danger">
+                    Ocurrió un error al consultar el activo.
+                </div>
+            `;
+
+        }
+
+    }
+
+
+
+
+    document
+        .getElementById('btn-generar-pdf')
+        .addEventListener('click', generarPDF);
+
+
+    async function generarPDF() {
+
+        const boton =
+            document.getElementById('btn-generar-pdf');
+
+        const textoOriginal =
+            boton.innerHTML;
+
+
+        boton.disabled = true;
+
+        boton.innerHTML = `
+            <i class="fas fa-spinner fa-spin"></i>
+            Generando PDF...
+        `;
+
+
+    try {
+
+        const equipos = [];
+
+
+        document
+            .querySelectorAll('.equipo-card')
+            .forEach(function (equipoCard) {
+
+                const obtenerValor = function (selector) {
+
+                    const elemento =
+                        equipoCard.querySelector(selector);
+
+                    return elemento
+                        ? elemento.value.trim()
+                        : '';
+
+                };
+
+
+                const codigo =
+                    obtenerValor('.codigo-activo');
+
+
+                /*
+                 * Se agrega el equipo incluso si algunos
+                 * campos están vacíos.
+                 */
+                equipos.push({
+                    codigo: codigo,
+
+                    descripcion:
+                        obtenerValor('.descripcion'),
+
+                    marca:
+                        obtenerValor('.marca'),
+
+                    modelo:
+                        obtenerValor('.modelo'),
+
+                    serie:
+                        obtenerValor('.serie'),
+
+                    estado:
+                        obtenerValor('.estado'),
+
+                    procesador:
+                        obtenerValor('.procesador'),
+
+                    memoria:
+                        obtenerValor('.memoria'),
+
+                    disco:
+                        obtenerValor('.disco'),
+
+                    sistema_operativo:
+                        obtenerValor(
+                            '.sistema-operativo'
+                        ),
+
+                    teclado:
+                        !!equipoCard
+                            .querySelector('.teclado')
+                            ?.checked,
+
+                    mouse:
+                        !!equipoCard
+                            .querySelector('.mouse')
+                            ?.checked,
+                });
+
+            });
+
+
+        const datosInforme = {
+
+            numero_informe:
+                document
+                    .getElementById('numeroInforme')
+                    .value
+                    .trim(),
+
+            ciudad: 'Guayaquil',
+
+            fecha:
+                document
+                    .getElementById('fechaInforme')
+                    .value,
+
+            anterior_custodio:
+                document
+                    .getElementById('anteriorCustodio')
+                    .value
+                    .trim(),
+
+            anterior_ubicacion:
+                document
+                    .getElementById('anteriorUbicacion')
+                    .value
+                    .trim(),
+
+            nuevo_custodio:
+                document
+                    .getElementById('nuevoCustodio')
+                    .value
+                    .trim(),
+
+            nueva_ubicacion:
+                document
+                    .getElementById('nuevaUbicacion')
+                    .value
+                    .trim(),
+
+            equipos: equipos,
+
+            observaciones:
+                document
+                    .getElementById('observaciones')
+                    .value
+                    .trim(),
+
+            elaborado_por:
+                document
+                    .getElementById('elaborado_por')
+                    .value
+                    .trim(),
+
+            cargo_elaborado:
+                document
+                    .getElementById('cargo_elaborado')
+                    .value
+                    .trim(),
+
+            supervisado_por:
+                document
+                    .getElementById('supervisado_por')
+                    .value
+                    .trim(),
+
+            cargo_supervisado:
+                document
+                    .getElementById('cargo_supervisado')
+                    .value
+                    .trim(),
+        };
+
+
+        const respuesta =
+            await fetch(
+                '/dispositivos/generar-informe-pdf/',
+                {
+                    method: 'POST',
+
+                    headers: {
+                        'Content-Type':
+                            'application/json',
+                    },
+
+                    body:
+                        JSON.stringify(
+                            datosInforme
+                        ),
+                }
+            );
+
+
+        if (!respuesta.ok) {
+
+            let mensaje =
+                'No se pudo generar el PDF.';
+
+            try {
+
+                const error =
+                    await respuesta.json();
+
+                mensaje =
+                    error.error ||
+                    error.mensaje ||
+                    mensaje;
+
+            } catch (e) {
+                console.error(e);
+            }
+
+            throw new Error(mensaje);
+
+        }
+
+
+        const archivo =
+            await respuesta.blob();
+
+
+        const url =
+            window.URL.createObjectURL(
+                archivo
+            );
+
+
+        const enlace =
+            document.createElement('a');
+
+        enlace.href = url;
+
+
+        const numeroInforme =
+            datosInforme.numero_informe ||
+            'informe_tecnico';
+
+
+        enlace.download =
+            `${numeroInforme}.pdf`;
+
+
+        document.body.appendChild(enlace);
+
+        enlace.click();
+
+        enlace.remove();
+
+        window.URL.revokeObjectURL(url);
+
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        alert(
+            'Ocurrió un error al generar el PDF: ' +
+            error.message
+        );
+
+    }
+
+    finally {
+
+        boton.disabled = false;
+
+        boton.innerHTML =
+            textoOriginal;
+
+    }
+
+}
+
+</script>
+
+{% endblock %}

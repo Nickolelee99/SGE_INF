@@ -1,0 +1,143 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SGE{% endblock %}</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" crossorigin="anonymous" />
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+        }
+
+        .sidebar {
+            height: 100vh;
+            width: 250px;
+            background-color: #2c3e50;
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding: 20px 0;
+        }
+
+        .sidebar h4 {
+            color: #fff;
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+
+        .sidebar a {
+            color: #ecf0f1;
+            text-decoration: none;
+            padding: 15px 25px;
+            display: block;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        .sidebar a:hover {
+            background-color: #1a252f;
+        }
+
+        .dropdown-menu {
+            background-color: #34495e;
+            border: none;
+        }
+
+        .dropdown-item {
+            color: #ecf0f1;
+        }
+
+        .dropdown-item:hover {
+            background-color: #1f2d3a;
+        }
+
+        .content {
+            margin-left: 250px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .logo-central {
+            max-width: 400px;
+            width: 100%;
+            height: auto;
+            margin: 100px auto 0;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+
+            .content {
+                margin-left: 0;
+                padding: 20px;
+            }
+
+            .logo-central {
+                margin-top: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h4>SGE</h4>
+        <div class="dropdown">
+            <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="fas fa-chart-bar"></i> Reportes
+            </a>
+            <ul class="dropdown-menu">
+                <li>
+                    <a class="dropdown-item" href="{% url 'dispositivos:lista_dispositivos' %}">
+                        <i class="fas fa-network-wired"></i> Dispositivos Conectados
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item"
+                        href="{% url 'dispositivos:crear_informe_tecnico' %}">
+                        <i class="fas fa-file-alt"></i>
+                        Crear informe técnico
+                    </a>
+</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="content">
+        {% block content %}
+            <img src="/static/logo-contraloria.png" alt="Logo Contraloría" class="logo-central">
+            <p>Static URL: {{ STATIC_URL }}</p>
+            <p>Static Root: {{ STATIC_ROOT }}</p>
+            <p>Static Files Dirs: {{ STATICFILES_DIRS }}</p>
+        {% endblock %}
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
