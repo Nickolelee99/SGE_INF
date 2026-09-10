@@ -105,11 +105,222 @@ def normalizar_codigo(valor):
         valor = valor[:-2]
     return valor
 
+# ============================================================
+# BÚSQUEDA DE EQUIPOS POR PERSONA
+# ============================================================
 
+def leer_inventario_excel():
+    """
+    Lee el inventario tecnológico desde la hoja Hoja1.
+    """
 
+    ruta_excel = obtener_ruta_inventario()
+
+    if not os.path.exists(ruta_excel):
+        raise FileNotFoundError(
+            f'No se encontró el archivo de inventario: {ruta_excel}'
+        )
+
+    df = pd.read_excel(
+        ruta_excel,
+        sheet_name='Hoja1',
+        dtype=str
+    )
+
+    # Limpiar nombres de columnas
+    df.columns = (
+        df.columns
+        .astype(str)
+        .str.strip()
+    )
+
+    # Reemplazar valores vacíos / NaN
+    df = df.fillna('')
+
+    # Limpiar espacios
+    for columna in df.columns:
+        df[columna] = (
+            df[columna]
+            .astype(str)
+            .str.strip()
+        )
+
+    return df
 
 
 @require_GET
+def obtener_personas(request):
+    """
+    Devuelve las personas que tienen equipos
+    registrados en el inventario.
+    """
+
+    try:
+
+        df = leer_inventario_excel()
+
+        columna_persona = 'APELLIDOS Y NOMBRES COMPLETOS'
+
+        if columna_persona not in df.columns:
+
+            return JsonResponse({
+                'encontrado': False,
+                'mensaje': (
+                    f'No existe la columna '
+                    f'"{columna_persona}" en el inventario.'
+                )
+            }, status=500)
+
+        personas = (
+            df[columna_persona]
+            .loc[
+                df[columna_persona].str.strip() != ''
+            ]
+            .drop_duplicates()
+            .sort_values()
+            .tolist()
+        )
+
+        return JsonResponse({
+            'encontrado': True,
+            'personas': personas
+        })
+
+    except Exception as e:
+
+        return JsonResponse({
+            'encontrado': False,
+            'mensaje': str(e)
+        }, status=500)
+
+
+@require_GET
+def obtener_equipos_persona(request, nombre_persona):
+    """
+    Devuelve todos los equipos asignados
+    a una persona.
+    """
+
+    try:
+
+        nombre_persona = str(nombre_persona).strip()
+
+        df = leer_inventario_excel()
+
+        columna_persona = (
+            'APELLIDOS Y NOMBRES COMPLETOS'
+        )
+
+        resultado = df[
+            df[columna_persona].str.upper()
+            ==
+            nombre_persona.upper()
+        ]
+
+        if resultado.empty:
+
+            return JsonResponse({
+                'encontrado': False,
+                'mensaje': (
+                    f'No se encontraron equipos '
+                    f'asignados a {nombre_persona}.'
+                )
+            }, status=404)
+
+
+        equipos = []
+
+
+        for _, activo in resultado.iterrows():
+
+            equipo = {
+
+                'codigo_actual': normalizar_codigo(
+                    activo.get('CÓDIGO DEL BIEN')
+                ),
+
+                'descripcion': limpiar_valor(
+                    activo.get(
+                        'DESCRIPCIÓN /CARACTERÍSTICAS DEL BIEN'
+                    )
+                ),
+
+                'marca': limpiar_valor(
+                    activo.get('MARCA')
+                ),
+
+                'modelo': limpiar_valor(
+                    activo.get('MODELO')
+                ),
+
+                'serie': limpiar_valor(
+                    activo.get('NÚMERO DE SERIE')
+                ),
+
+                'estado': limpiar_valor(
+                    activo.get('ESTADO')
+                ),
+
+                'procesador': limpiar_valor(
+                    activo.get('PROCESADOR/CAPACIDAD')
+                ),
+
+                'memoria': limpiar_valor(
+                    activo.get('MEMORIA GB')
+                ),
+
+                'disco': limpiar_valor(
+                    activo.get('DISCO GB')
+                ),
+
+                'sistema_operativo': limpiar_valor(
+                    activo.get('SISTEMA OPERATIVO')
+                ),
+
+                'persona': limpiar_valor(
+                    activo.get(
+                        'APELLIDOS Y NOMBRES COMPLETOS'
+                    )
+                ),
+
+                'ubicacion': limpiar_valor(
+                    activo.get(
+                        'UBICACION FISICA EDIFICIO'
+                    )
+                ),
+            }
+
+
+            if equipo['codigo_actual']:
+
+                equipos.append(equipo)
+
+
+        return JsonResponse({
+
+            'encontrado': True,
+
+            'persona': nombre_persona,
+
+            'total': len(equipos),
+
+            'equipos': equipos
+
+        })
+
+
+    except Exception as e:
+
+        return JsonResponse({
+
+            'encontrado': False,
+
+            'mensaje': str(e)
+
+        }, status=500)
+
+@require_GET
+
 def buscar_activo(request, codigo_activo):
     """Busca un activo en la hoja Hoja1 del inventario tecnológico 2026."""
     try:
