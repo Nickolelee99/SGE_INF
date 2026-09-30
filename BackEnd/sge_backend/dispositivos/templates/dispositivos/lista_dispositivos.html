@@ -4,6 +4,126 @@
 
 {% block content %}
     <h1>Lista de Dispositivos</h1>
+
+
+    <div class="container-fluid mb-4">
+
+        <div class="row g-3">
+
+            <!-- TOTAL -->
+            <div class="col-md-6 col-xl">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">
+                            TOTAL DE DISPOSITIVOS
+                        </div>
+
+                        <div class="fs-2 fw-bold">
+                            {{ kpis.total }}
+                        </div>
+
+                        <div class="small text-muted">
+                            Inventario administrativo
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- CONECTADOS -->
+            <div class="col-md-6 col-xl">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+
+                        <div class="text-muted small">
+                            CONECTADOS
+                        </div>
+
+                        <div class="fs-2 fw-bold text-success">
+                            {{ kpis.conectados }}
+                        </div>
+
+                        <div class="small text-muted">
+                            Detectados en el último escaneo
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- NO CONECTADOS -->
+            <div class="col-md-6 col-xl">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+
+                        <div class="text-muted small">
+                            NO CONECTADOS
+                        </div>
+
+                        <div class="fs-2 fw-bold text-danger">
+                            {{ kpis.no_conectados }}
+                        </div>
+
+                        <div class="small text-muted">
+                            No encontrados en la red
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- PORCENTAJE -->
+            <div class="col-md-6 col-xl">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+
+                        <div class="text-muted small">
+                            CONECTIVIDAD
+                        </div>
+
+                        <div class="fs-2 fw-bold">
+                            {{ kpis.porcentaje }}%
+                        </div>
+
+                        <div class="small text-muted">
+                            Del inventario detectado
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- SIN INVENTARIO -->
+            <div class="col-md-6 col-xl">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+
+                        <div class="text-muted small">
+                            SIN INVENTARIO
+                        </div>
+
+                        <div class="fs-2 fw-bold text-warning">
+                            {{ kpis.sin_inventario }}
+                        </div>
+
+                        <div class="small text-muted">
+                            Detectados en red sin coincidencia
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+
     <table class="table">
         <thead>
             <tr>

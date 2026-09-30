@@ -52,10 +52,6 @@ Crear informe técnico
         border-radius: 6px;
     }
 
-    .btn-buscar {
-        white-space: nowrap;
-    }
-
     .perifericos {
         display: none;
         margin-top: 15px;
@@ -68,10 +64,6 @@ Crear informe técnico
         position: absolute;
         top: 15px;
         right: 15px;
-    }
-
-    .btn-agregar-equipo {
-        margin-top: 10px;
     }
 
     #btn-generar-pdf {
@@ -145,87 +137,6 @@ Crear informe técnico
     </div>
 
 
-    <!-- CAMBIO DE CUSTODIA -->
-    <div class="seccion">
-
-        <div class="seccion-titulo">
-            Cambio de custodio y ubicación
-        </div>
-
-        <div class="row">
-
-            <div class="col-md-6">
-
-                <div class="datos-actuales">
-
-                    <h6>
-                        <i class="fas fa-history"></i>
-                        Información anterior
-                    </h6>
-
-                    <label class="form-label mt-2">
-                        Anterior custodio
-                    </label>
-
-                    <input
-                        type="text"
-                        class="form-control"
-                        id="anteriorCustodio"
-                        readonly
-                    >
-
-
-                    <label class="form-label mt-3">
-                        Anterior ubicación
-                    </label>
-
-                    <input
-                        type="text"
-                        class="form-control"
-                        id="anteriorUbicacion"
-                        readonly
-                    >
-
-                </div>
-
-            </div>
-
-
-            <div class="col-md-6">
-
-                <h6>
-                    <i class="fas fa-arrow-right"></i>
-                    Nueva información
-                </h6>
-
-                <label class="form-label mt-2">
-                    Nuevo custodio
-                </label>
-
-                <input
-                    type="text"
-                    class="form-control"
-                    id="nuevoCustodio"
-                >
-
-
-                <label class="form-label mt-3">
-                    Nueva ubicación
-                </label>
-
-                <input
-                    type="text"
-                    class="form-control"
-                    id="nuevaUbicacion"
-                >
-
-            </div>
-
-        </div>
-
-    </div>
-
-
     <!-- BUSCAR EQUIPOS -->
     <div class="seccion">
 
@@ -274,6 +185,27 @@ Crear informe técnico
                 </label>
             </div>
 
+        </div>
+
+
+        <!-- BÚSQUEDA POR CÓDIGO -->
+
+        <div id="busquedaCodigo">
+            <div class="row align-items-end">
+                <div class="col-md-8">
+                    <label for="codigoBusqueda" class="form-label">
+                        Código de activo fijo
+                    </label>
+                    <input type="text" id="codigoBusqueda" class="form-control" placeholder="Ingrese el código del activo">
+                </div>
+                <div class="col-md-4">
+                    <button type="button" class="btn btn-primary w-100" id="btnBuscarCodigo">
+                        <i class="fas fa-search"></i>
+                        Buscar equipo
+                    </button>
+                </div>
+            </div>
+            <div id="mensajeCodigo" class="mt-3"></div>
         </div>
 
 
@@ -355,15 +287,88 @@ Crear informe técnico
         </div>
 
         <div id="contenedorEquipos"></div>
+</div>
 
-        <button
-            type="button"
-            class="btn btn-outline-primary btn-agregar-equipo"
-            id="btnAgregarEquipo"
-        >
-            <i class="fas fa-plus"></i>
-            Agregar otro equipo
-        </button>
+
+
+
+    <!-- CAMBIO DE CUSTODIA -->
+    <div class="seccion">
+
+        <div class="seccion-titulo">
+            Cambio de custodio y ubicación
+        </div>
+
+        <div class="row">
+
+            <div class="col-md-6">
+
+                <div class="datos-actuales">
+
+                    <h6>
+                        <i class="fas fa-history"></i>
+                        Información anterior
+                    </h6>
+
+                    <label class="form-label mt-2">
+                        Anterior custodio
+                    </label>
+
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="anteriorCustodio"
+                        readonly
+                    >
+
+
+                    <label class="form-label mt-3">
+                        Anterior ubicación
+                    </label>
+
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="anteriorUbicacion"
+                        readonly
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-6">
+
+                <h6>
+                    <i class="fas fa-arrow-right"></i>
+                    Nueva información
+                </h6>
+
+                <label class="form-label mt-2">
+                    Nuevo custodio
+                </label>
+
+                <input
+                    type="text"
+                    class="form-control"
+                    id="nuevoCustodio"
+                >
+
+
+                <label class="form-label mt-3">
+                    Nueva ubicación
+                </label>
+
+                <input
+                    type="text"
+                    class="form-control"
+                    id="nuevaUbicacion"
+                >
+
+            </div>
+
+        </div>
 
     </div>
 
@@ -515,76 +520,56 @@ Crear informe técnico
 
     document.addEventListener('DOMContentLoaded', function () {
 
-        const radioCodigo =
-            document.getElementById('buscarPorCodigo');
+        const hoy = new Date();
+        const fecha =
+            hoy.getFullYear() + '-' +
+            String(hoy.getMonth() + 1).padStart(2, '0') + '-' +
+            String(hoy.getDate()).padStart(2, '0');
+        document.getElementById('fechaInforme').value = fecha;
 
-        const radioPersona =
-            document.getElementById('buscarPorPersona');
+        const radioCodigo = document.getElementById('buscarPorCodigo');
+        const radioPersona = document.getElementById('buscarPorPersona');
+        const busquedaCodigo = document.getElementById('busquedaCodigo');
+        const busquedaPersona = document.getElementById('busquedaPersona');
+        const selectPersona = document.getElementById('selectPersona');
+        const btnBuscarCodigo = document.getElementById('btnBuscarCodigo');
+        const codigoBusqueda = document.getElementById('codigoBusqueda');
 
-        const busquedaPersona =
-            document.getElementById('busquedaPersona');
+        btnBuscarCodigo.addEventListener('click', buscarActivoPorCodigo);
+        codigoBusqueda.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                buscarActivoPorCodigo();
+            }
+        });
 
-        const selectPersona =
-            document.getElementById('selectPersona');
-
-
-        // Cuando selecciona "Código"
         radioCodigo.addEventListener('change', function () {
-
             if (this.checked) {
-
+                busquedaCodigo.style.display = 'block';
                 busquedaPersona.style.display = 'none';
-
             }
-
         });
 
-
-        // Cuando selecciona "Persona"
         radioPersona.addEventListener('change', function () {
-
             if (this.checked) {
-
+                busquedaCodigo.style.display = 'none';
                 busquedaPersona.style.display = 'block';
-
                 cargarPersonas();
-
             }
-
         });
 
-
-        // Cuando selecciona una persona
         selectPersona.addEventListener('change', function () {
-
-            const nombre =
-                this.value;
-
+            const nombre = this.value;
             if (nombre) {
-
                 cargarEquiposPersona(nombre);
-
             } else {
-
-                document.getElementById(
-                    'listaEquiposPersona'
-                ).style.display = 'none';
-
+                document.getElementById('listaEquiposPersona').style.display = 'none';
             }
-
         });
 
-
-        // Botón para agregar equipos seleccionados
-        document
-            .getElementById('btnAgregarSeleccionados')
-            .addEventListener(
-                'click',
-                agregarEquiposSeleccionados
-            );
-
+        document.getElementById('btnAgregarSeleccionados')
+            .addEventListener('click', agregarEquiposSeleccionados);
     });
-
 
 
     async function cargarPersonas() {
@@ -750,7 +735,6 @@ Crear informe técnico
                     type="checkbox"
                     id="${idCheckbox}"
                     value="${equipo.codigo_actual}"
-                    data-equipo='${JSON.stringify(equipo)}'
                 >
 
                 <label
@@ -785,6 +769,8 @@ Crear informe técnico
             `;
 
 
+            const checkbox = item.querySelector('.checkbox-equipo-persona');
+            checkbox.dataset.equipo = JSON.stringify(equipo);
             contenedor.appendChild(item);
 
         });
@@ -807,573 +793,142 @@ Crear informe técnico
 
     }
 
-    function agregarEquiposSeleccionados() {
-
-        const seleccionados =
-            document.querySelectorAll(
-                '.checkbox-equipo-persona:checked'
-            );
-
-
-        if (seleccionados.length === 0) {
-
-            alert(
-                'Seleccione al menos un equipo.'
-            );
-
-            return;
-
-        }
-
-
-        let equiposAgregados = 0;
-
-
-        seleccionados.forEach(function (checkbox) {
-
-            const equipo =
-                JSON.parse(
-                    checkbox.dataset.equipo
-                );
-
-
-            // Verificar si ya existe el código
-            const equiposActuales =
-                document.querySelectorAll(
-                    '.codigo-activo'
-                );
-
-
-            let yaExiste = false;
-
-
-            equiposActuales.forEach(function (input) {
-
-                if (
-                    input.value.trim() ===
-                    equipo.codigo_actual.trim()
-                ) {
-
-                    yaExiste = true;
-
-                }
-
-            });
-
-
-            if (yaExiste) {
-
-                return;
-
-            }
-
-
-            // Crear una nueva tarjeta
-            agregarEquipo();
-
-
-            // Obtener la última tarjeta creada
-            const tarjeta =
-                document.getElementById(
-                    `equipo-${contadorEquipos}`
-                );
-
-
-            // Colocar los datos
-            tarjeta.querySelector(
-                '.codigo-activo'
-            ).value =
-                equipo.codigo_actual;
-
-
-            tarjeta.querySelector(
-                '.descripcion'
-            ).value =
-                equipo.descripcion;
-
-
-            tarjeta.querySelector(
-                '.marca'
-            ).value =
-                equipo.marca;
-
-
-            tarjeta.querySelector(
-                '.modelo'
-            ).value =
-                equipo.modelo;    
-
-
-            tarjeta.querySelector(
-                '.serie'
-            ).value =
-                equipo.serie;
-
-
-            tarjeta.querySelector(
-                '.estado'
-            ).value =
-                equipo.estado;
-
-
-            tarjeta.querySelector(
-                '.procesador'
-            ).value =
-                equipo.procesador;
-
-
-            tarjeta.querySelector(
-                '.memoria'
-            ).value =
-                equipo.memoria;
-
-
-            tarjeta.querySelector(
-                '.disco'
-            ).value =
-                equipo.disco;
-
-
-            tarjeta.querySelector(
-                '.sistema-operativo'
-            ).value =
-                equipo.sistema_operativo;
-
-
-            // Persona asignada
-            const personaAsignada =
-                tarjeta.querySelector(
-                    '.persona-asignada'
-                );
-
-
-            if (personaAsignada) {
-
-                personaAsignada.value =
-                    equipo.persona || '';
-
-            }
-
-
-            // Mostrar resultado
-            const resultado =
-                tarjeta.querySelector(
-                    `[id^="resultado-"]`
-                );
-
-
-            if (resultado) {
-
-                resultado.style.display =
-                    'block';
-
-            }
-
-
-            // Mostrar periféricos si es computador de escritorio
-            const perifericos =
-                tarjeta.querySelector(
-                    '.perifericos'
-                );
-
-
-            if (
-                perifericos &&
-                equipo.descripcion &&
-                equipo.descripcion
-                    .toUpperCase()
-                    .includes(
-                        'COMPUTADOR DE ESCRITORIO'
-                    )
-            ) {
-
-                perifericos.style.display =
-                    'block';
-
-            }
-
-
-            equiposAgregados++;
-
-        });
-
-
-        // Colocar información anterior
-        if (seleccionados.length > 0) {
-
-            const primerEquipo =
-                JSON.parse(
-                    seleccionados[0].dataset.equipo
-                );
-
-
-            const anteriorCustodio =
-                document.getElementById(
-                    'anteriorCustodio'
-                );
-
-
-            const anteriorUbicacion =
-                document.getElementById(
-                    'anteriorUbicacion'
-                );
-
-
-            if (anteriorCustodio) {
-
-                anteriorCustodio.value =
-                    primerEquipo.persona || '';
-
-            }
-
-
-            if (
-                anteriorUbicacion &&
-                !anteriorUbicacion.value
-            ) {
-
-                anteriorUbicacion.value =
-                    primerEquipo.ubicacion || '';
-
-            }
-
-        }
-
-
-        if (equiposAgregados === 0) {
-
-            alert(
-                'Los equipos seleccionados ya están agregados.'
-            );
-
-        } else {
-
-            alert(
-                `Se agregaron ${equiposAgregados} equipo(s) al informe.`
-            );
-
-        }
-
-
-        // Desmarcar las casillas
-        seleccionados.forEach(function (checkbox) {
-
-            checkbox.checked = false;
-
-        });
-
+    function obtenerCodigosAgregados() {
+        return Array.from(document.querySelectorAll('.codigo-activo'))
+            .map(function (input) { return input.value.trim(); })
+            .filter(Boolean);
     }
 
 
-    document.addEventListener('DOMContentLoaded', function () {
+    function agregarEquiposSeleccionados() {
+        const seleccionados = document.querySelectorAll('.checkbox-equipo-persona:checked');
 
-        const hoy = new Date();
+        if (seleccionados.length === 0) {
+            alert('Seleccione al menos un equipo.');
+            return;
+        }
 
-        const fecha =
-            hoy.getFullYear() + '-' +
-            String(hoy.getMonth() + 1).padStart(2, '0') + '-' +
-            String(hoy.getDate()).padStart(2, '0');
+        let equiposAgregados = 0;
+        const codigosActuales = obtenerCodigosAgregados();
 
-        document.getElementById('fechaInforme').value = fecha;
+        seleccionados.forEach(function (checkbox) {
+            const equipo = JSON.parse(checkbox.dataset.equipo);
+            const codigo = (equipo.codigo_actual || '').trim();
 
-        agregarEquipo();
-
-    });
-
-
-    document
-        .getElementById('btnAgregarEquipo')
-        .addEventListener('click', function () {
+            if (!codigo || codigosActuales.includes(codigo)) return;
 
             agregarEquipo();
-
+            const tarjeta = document.getElementById(`equipo-${contadorEquipos}`);
+            llenarTarjetaEquipo(tarjeta, equipo);
+            codigosActuales.push(codigo);
+            equiposAgregados++;
         });
+
+        if (equiposAgregados > 0) {
+            const primerEquipo = JSON.parse(seleccionados[0].dataset.equipo);
+            document.getElementById('anteriorCustodio').value = primerEquipo.persona || '';
+            document.getElementById('anteriorUbicacion').value = primerEquipo.ubicacion || '';
+            alert(`Se agregaron ${equiposAgregados} equipo(s) al informe.`);
+        } else {
+            alert('Los equipos seleccionados ya están agregados.');
+        }
+
+        seleccionados.forEach(function (checkbox) { checkbox.checked = false; });
+    }
 
 
     function agregarEquipo() {
-
         contadorEquipos++;
-
         const numero = contadorEquipos;
-
-        const contenedor =
-            document.getElementById('contenedorEquipos');
-
+        const contenedor = document.getElementById('contenedorEquipos');
 
         const html = `
+            <div class="equipo-card" id="equipo-${numero}" data-equipo="${numero}">
+                <div class="titulo-equipo">Equipo ${numero}</div>
 
-            <div
-                class="equipo-card"
-                id="equipo-${numero}"
-                data-equipo="${numero}"
-            >
+                <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-equipo" onclick="eliminarEquipo(${numero})" title="Eliminar equipo">
+                    <i class="fas fa-trash"></i>
+                </button>
 
-                <div class="titulo-equipo">
-                    Equipo ${numero}
-                </div>
-
-
-                ${numero > 1 ? `
-
-                    <button
-                        type="button"
-                        class="btn btn-sm btn-outline-danger btn-eliminar-equipo"
-                        onclick="eliminarEquipo(${numero})"
-                    >
-                        <i class="fas fa-trash"></i>
-                    </button>
-
-                ` : ''}
-
-
-                <div class="row align-items-end">
-
-                    <div class="col-md-8">
-
-                        <label class="form-label">
-                            Código de activo fijo
-                        </label>
-
-                        <input
-                            type="text"
-                            class="form-control codigo-activo"
-                            id="codigo-${numero}"
-                            placeholder="Ingrese el código del activo"
-                        >
-
-                    </div>
-
-
-                    <div class="col-md-4">
-
-                        <button
-                            type="button"
-                            class="btn btn-primary w-100 btn-buscar"
-                            onclick="buscarActivo(${numero})"
-                        >
-                            <i class="fas fa-search"></i>
-                            Buscar
-                        </button>
-
-                    </div>
-
-                </div>
-
-
-                <div
-                    id="resultado-${numero}"
-                    class="mt-4"
-                    style="display: none;"
-                >
-
+                <div id="resultado-${numero}" class="mt-4">
                     <div class="row">
-
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Código de activo fijo</label>
+                            <input type="text" class="form-control codigo-activo" readonly>
+                        </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Tipo de equipo</label>
-                            <input
-                                type="text"
-                                class="form-control descripcion"
-                                readonly
-                            >
+                            <input type="text" class="form-control descripcion" readonly>
                         </div>
-
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Marca</label>
-                            <input
-                                type="text"
-                                class="form-control marca"
-                                readonly
-                            >
+                            <input type="text" class="form-control marca" readonly>
                         </div>
+                    </div>
 
+                    <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Modelo</label>
-                            <input
-                                type="text"
-                                class="form-control modelo"
-                                readonly
-                            >
+                            <input type="text" class="form-control modelo" readonly>
                         </div>
-
-                    </div>
-
-                    <div class="row">
-
-                        <div class="col-md-12 mb-3">
-
-                            <label class="form-label">
-                                Persona asignada
-                            </label>
-
-                            <input
-                                type="text"
-                                class="form-control persona-asignada"
-                                readonly
-                            >
-
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Persona asignada</label>
+                            <input type="text" class="form-control persona-asignada" readonly>
                         </div>
-
-                    </div>
-
-
-
-                    <div class="row">
-
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Número de serie</label>
-                            <input
-                                type="text"
-                                class="form-control serie"
-                                readonly
-                            >
+                            <input type="text" class="form-control serie" readonly>
                         </div>
+                    </div>
 
+                    <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Estado</label>
-                            <input
-                                type="text"
-                                class="form-control estado"
-                                readonly
-                            >
+                            <input type="text" class="form-control estado" readonly>
                         </div>
-
                     </div>
-
 
                     <div class="especificaciones-tecnicas">
-
                         <hr>
-
-                        <h6>
-                            Especificaciones técnicas
-                        </h6>
-
-
+                        <h6>Especificaciones técnicas</h6>
                         <div class="row">
-
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">
-                                    Procesador
-                                </label>
-
-                                <input
-                                    type="text"
-                                    class="form-control procesador"
-                                    readonly
-                                >
+                                <label class="form-label">Procesador</label>
+                                <input type="text" class="form-control procesador" readonly>
                             </div>
-
-
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">
-                                    Memoria RAM
-                                </label>
-
-                                <input
-                                    type="text"
-                                    class="form-control memoria"
-                                    readonly
-                                >
+                                <label class="form-label">Memoria RAM</label>
+                                <input type="text" class="form-control memoria" readonly>
                             </div>
-
                         </div>
-
-
                         <div class="row">
-
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">
-                                    Disco
-                                </label>
-
-                                <input
-                                    type="text"
-                                    class="form-control disco"
-                                    readonly
-                                >
+                                <label class="form-label">Disco</label>
+                                <input type="text" class="form-control disco" readonly>
                             </div>
-
-
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">
-                                    Sistema operativo
-                                </label>
-
-                                <input
-                                    type="text"
-                                    class="form-control sistema-operativo"
-                                    readonly
-                                >
+                                <label class="form-label">Sistema operativo</label>
+                                <input type="text" class="form-control sistema-operativo" readonly>
                             </div>
-
                         </div>
-
                     </div>
 
-
-                    <div
-                        class="perifericos"
-                        id="perifericos-${numero}"
-                    >
-
-                        <strong>
-                            Periféricos incluidos con el computador
-                        </strong>
-
+                    <div class="perifericos" id="perifericos-${numero}">
+                        <strong>Periféricos incluidos con el computador</strong>
                         <div class="form-check mt-2">
-
-                            <input
-                                class="form-check-input teclado"
-                                type="checkbox"
-                                id="teclado-${numero}"
-                            >
-
-                            <label
-                                class="form-check-label"
-                                for="teclado-${numero}"
-                            >
-                                Teclado
-                            </label>
-
+                            <input class="form-check-input teclado" type="checkbox" id="teclado-${numero}">
+                            <label class="form-check-label" for="teclado-${numero}">Teclado</label>
                         </div>
-
-
                         <div class="form-check">
-
-                            <input
-                                class="form-check-input mouse"
-                                type="checkbox"
-                                id="mouse-${numero}"
-                            >
-
-                            <label
-                                class="form-check-label"
-                                for="mouse-${numero}"
-                            >
-                                Mouse
-                            </label>
-
+                            <input class="form-check-input mouse" type="checkbox" id="mouse-${numero}">
+                            <label class="form-check-label" for="mouse-${numero}">Mouse</label>
                         </div>
-
                     </div>
-
                 </div>
-
-
-                <div
-                    id="mensaje-${numero}"
-                    class="mt-3"
-                ></div>
-
             </div>
-
         `;
 
-        contenedor.insertAdjacentHTML(
-            'beforeend',
-            html
-        );
-
+        contenedor.insertAdjacentHTML('beforeend', html);
     }
 
 
@@ -1408,451 +963,89 @@ Crear informe técnico
     }
 
 
-    async function buscarActivo(numero) {
-
-        const codigo =
-            document
-                .getElementById(`codigo-${numero}`)
-                .value
-                .trim();
-
-
-        if (!codigo) {
-
-            document
-                .getElementById(`mensaje-${numero}`)
-                .innerHTML = `
-                    <div class="alert alert-warning">
-                        Ingrese un código de activo.
-                    </div>
-                `;
-
-            return;
-
-        }
-
-
-        const mensaje =
-            document.getElementById(`mensaje-${numero}`);
-
-
-        mensaje.innerHTML = `
-            <div class="alert alert-info">
-                Buscando activo...
-            </div>
-        `;
-
-
-        try {
-
-            const respuesta =
-                await fetch(
-                `/dispositivos/api/activo/${encodeURIComponent(codigo)}/`
-                );
-
-
-            const datos =
-                await respuesta.json();
-
-
-            if (!respuesta.ok || !datos.encontrado) {
-
-                mensaje.innerHTML = `
-                    <div class="alert alert-danger">
-                        ${datos.mensaje || 'Activo no encontrado.'}
-                    </div>
-                `;
-
-                return;
-
-            }
-
-
-            const equipo =
-                document.getElementById(`equipo-${numero}`);
-
-
-            equipo.querySelector('.descripcion').value =
-                datos.descripcion;
-
-            equipo.querySelector('.marca').value =
-                datos.marca;
-
-            equipo.querySelector('.modelo').value =
-                datos.modelo;
-
-            equipo.querySelector('.serie').value =
-                datos.serie;
-
-            equipo.querySelector('.estado').value =
-                datos.estado;
-
-            equipo.querySelector('.procesador').value =
-                datos.procesador;
-
-            equipo.querySelector('.memoria').value =
-                datos.memoria;
-
-            equipo.querySelector('.disco').value =
-                datos.disco;
-
-            equipo.querySelector('.sistema-operativo').value =
-                datos.sistema_operativo;
-
-            equipo.querySelector('.persona-asignada').value =
-                datos.anterior_custodio || '';
-
-
-            document
-                .getElementById(`resultado-${numero}`)
-                .style.display = 'block';
-
-
-            const esComputador =
-                datos.descripcion &&
-                (
-                    datos.descripcion
-                        .toUpperCase()
-                        .includes('COMPUTADOR')
-                );
-
-
-            const perifericos =
-                document.getElementById(
-                    `perifericos-${numero}`
-                );
-
-
-            if (
-                datos.descripcion
-                    .toUpperCase()
-                    .includes('COMPUTADOR DE ESCRITORIO')
-            ) {
-
-                perifericos.style.display = 'block';
-
-            } else {
-
-                perifericos.style.display = 'none';
-
-            }
-
-
-            /*
-             * El primer equipo determina automáticamente
-             * el custodio y ubicación anteriores.
-             */
-            if (numero === 1) {
-
-                document
-                    .getElementById('anteriorCustodio')
-                    .value =
-                    datos.anterior_custodio;
-
-
-                document
-                    .getElementById('anteriorUbicacion')
-                    .value =
-                    datos.anterior_ubicacion;
-
-            }
-
-
-            mensaje.innerHTML = `
-                <div class="alert alert-success">
-                    Activo encontrado correctamente.
-                </div>
-            `;
-
-        }
-
-        catch (error) {
-
-            console.error(error);
-
-            mensaje.innerHTML = `
-                <div class="alert alert-danger">
-                    Ocurrió un error al consultar el activo.
-                </div>
-            `;
-
-        }
-
-    }
-
-
-
-
-    document
-        .getElementById('btn-generar-pdf')
-        .addEventListener('click', generarPDF);
-
-
-    async function generarPDF() {
-
-        const boton =
-            document.getElementById('btn-generar-pdf');
-
-        const textoOriginal =
-            boton.innerHTML;
-
-
-        boton.disabled = true;
-
-        boton.innerHTML = `
-            <i class="fas fa-spinner fa-spin"></i>
-            Generando PDF...
-        `;
-
-
-    try {
-
-        const equipos = [];
-
-
-        document
-            .querySelectorAll('.equipo-card')
-            .forEach(function (equipoCard) {
-
-                const obtenerValor = function (selector) {
-
-                    const elemento =
-                        equipoCard.querySelector(selector);
-
-                    return elemento
-                        ? elemento.value.trim()
-                        : '';
-
-                };
-
-
-                const codigo =
-                    obtenerValor('.codigo-activo');
-
-
-                /*
-                 * Se agrega el equipo incluso si algunos
-                 * campos están vacíos.
-                 */
-                equipos.push({
-                    codigo: codigo,
-
-                    descripcion:
-                        obtenerValor('.descripcion'),
-
-                    marca:
-                        obtenerValor('.marca'),
-
-                    modelo:
-                        obtenerValor('.modelo'),
-
-                    serie:
-                        obtenerValor('.serie'),
-
-                    estado:
-                        obtenerValor('.estado'),
-
-                    procesador:
-                        obtenerValor('.procesador'),
-
-                    memoria:
-                        obtenerValor('.memoria'),
-
-                    disco:
-                        obtenerValor('.disco'),
-
-                    sistema_operativo:
-                        obtenerValor(
-                            '.sistema-operativo'
-                        ),
-
-                    teclado:
-                        !!equipoCard
-                            .querySelector('.teclado')
-                            ?.checked,
-
-                    mouse:
-                        !!equipoCard
-                            .querySelector('.mouse')
-                            ?.checked,
-                });
-
-            });
-
-
-        const datosInforme = {
-
-            numero_informe:
-                document
-                    .getElementById('numeroInforme')
-                    .value
-                    .trim(),
-
-            ciudad: 'Guayaquil',
-
-            fecha:
-                document
-                    .getElementById('fechaInforme')
-                    .value,
-
-            anterior_custodio:
-                document
-                    .getElementById('anteriorCustodio')
-                    .value
-                    .trim(),
-
-            anterior_ubicacion:
-                document
-                    .getElementById('anteriorUbicacion')
-                    .value
-                    .trim(),
-
-            nuevo_custodio:
-                document
-                    .getElementById('nuevoCustodio')
-                    .value
-                    .trim(),
-
-            nueva_ubicacion:
-                document
-                    .getElementById('nuevaUbicacion')
-                    .value
-                    .trim(),
-
-            equipos: equipos,
-
-            observaciones:
-                document
-                    .getElementById('observaciones')
-                    .value
-                    .trim(),
-
-            elaborado_por:
-                document
-                    .getElementById('elaborado_por')
-                    .value
-                    .trim(),
-
-            cargo_elaborado:
-                document
-                    .getElementById('cargo_elaborado')
-                    .value
-                    .trim(),
-
-            supervisado_por:
-                document
-                    .getElementById('supervisado_por')
-                    .value
-                    .trim(),
-
-            cargo_supervisado:
-                document
-                    .getElementById('cargo_supervisado')
-                    .value
-                    .trim(),
+    function llenarTarjetaEquipo(tarjeta, datos) {
+        if (!tarjeta) return;
+
+        const asignar = function (selector, valor) {
+            const elemento = tarjeta.querySelector(selector);
+            if (elemento) elemento.value = valor || '';
         };
 
+        asignar('.codigo-activo', datos.codigo_actual);
+        asignar('.descripcion', datos.descripcion);
+        asignar('.marca', datos.marca);
+        asignar('.modelo', datos.modelo);
+        asignar('.persona-asignada', datos.persona);
+        asignar('.serie', datos.serie);
+        asignar('.estado', datos.estado);
+        asignar('.procesador', datos.procesador);
+        asignar('.memoria', datos.memoria);
+        asignar('.disco', datos.disco);
+        asignar('.sistema-operativo', datos.sistema_operativo);
 
-        const respuesta =
-            await fetch(
-                '/dispositivos/generar-informe-pdf/',
-                {
-                    method: 'POST',
-
-                    headers: {
-                        'Content-Type':
-                            'application/json',
-                    },
-
-                    body:
-                        JSON.stringify(
-                            datosInforme
-                        ),
-                }
-            );
+        const perifericos = tarjeta.querySelector('.perifericos');
+        if (perifericos && datos.descripcion && datos.descripcion.toUpperCase().includes('COMPUTADOR DE ESCRITORIO')) {
+            perifericos.style.display = 'block';
+        } else if (perifericos) {
+            perifericos.style.display = 'none';
+        }
+    }
 
 
-        if (!respuesta.ok) {
+    async function buscarActivoPorCodigo() {
+        const input = document.getElementById('codigoBusqueda');
+        const mensaje = document.getElementById('mensajeCodigo');
+        const codigo = input.value.trim();
 
-            let mensaje =
-                'No se pudo generar el PDF.';
-
-            try {
-
-                const error =
-                    await respuesta.json();
-
-                mensaje =
-                    error.error ||
-                    error.mensaje ||
-                    mensaje;
-
-            } catch (e) {
-                console.error(e);
-            }
-
-            throw new Error(mensaje);
-
+        if (!codigo) {
+            mensaje.innerHTML = '<div class="alert alert-warning">Ingrese un código de activo.</div>';
+            return;
         }
 
+        if (obtenerCodigosAgregados().includes(codigo)) {
+            mensaje.innerHTML = `<div class="alert alert-warning">El equipo con código <strong>${codigo}</strong> ya está agregado al informe.</div>`;
+            return;
+        }
 
-        const archivo =
-            await respuesta.blob();
+        mensaje.innerHTML = '<div class="alert alert-info">Buscando equipo...</div>';
 
+        try {
+            const respuesta = await fetch(`/dispositivos/api/activo/${encodeURIComponent(codigo)}/`);
+            const datos = await respuesta.json();
 
-        const url =
-            window.URL.createObjectURL(
-                archivo
-            );
+            if (!respuesta.ok || !datos.encontrado) {
+                mensaje.innerHTML = `<div class="alert alert-danger">${datos.mensaje || 'Activo no encontrado.'}</div>`;
+                return;
+            }
 
+            agregarEquipo();
+            const tarjeta = document.getElementById(`equipo-${contadorEquipos}`);
+            llenarTarjetaEquipo(tarjeta, {
+                codigo_actual: datos.codigo_actual,
+                descripcion: datos.descripcion,
+                marca: datos.marca,
+                modelo: datos.modelo,
+                serie: datos.serie,
+                estado: datos.estado,
+                procesador: datos.procesador,
+                memoria: datos.memoria,
+                disco: datos.disco,
+                sistema_operativo: datos.sistema_operativo,
+                persona: datos.anterior_custodio || ''
+            });
 
-        const enlace =
-            document.createElement('a');
+            if (contadorEquipos === 1) {
+                document.getElementById('anteriorCustodio').value = datos.anterior_custodio || '';
+                document.getElementById('anteriorUbicacion').value = datos.anterior_ubicacion || '';
+            }
 
-        enlace.href = url;
-
-
-        const numeroInforme =
-            datosInforme.numero_informe ||
-            'informe_tecnico';
-
-
-        enlace.download =
-            `${numeroInforme}.pdf`;
-
-
-        document.body.appendChild(enlace);
-
-        enlace.click();
-
-        enlace.remove();
-
-        window.URL.revokeObjectURL(url);
-
-
+            mensaje.innerHTML = '<div class="alert alert-success">Equipo encontrado y agregado correctamente.</div>';
+            input.value = '';
+        } catch (error) {
+            console.error(error);
+            mensaje.innerHTML = '<div class="alert alert-danger">Ocurrió un error al consultar el equipo.</div>';
+        }
     }
-
-    catch (error) {
-
-        console.error(error);
-
-        alert(
-            'Ocurrió un error al generar el PDF: ' +
-            error.message
-        );
-
-    }
-
-    finally {
-
-        boton.disabled = false;
-
-        boton.innerHTML =
-            textoOriginal;
-
-    }
-
-}
 
 </script>
 
