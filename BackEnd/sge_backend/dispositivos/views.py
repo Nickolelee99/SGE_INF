@@ -60,8 +60,6 @@ RESPONSABLES = {
     "Alex Alonso Sandoval Pinzon":"ESPECIALISTA PROVINCIAL DE GESTION DE SERVICIOS",
 }
 
-
-
 def crear_informe_tecnico(request):
     return render(
         request,
